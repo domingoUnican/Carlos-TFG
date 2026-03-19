@@ -1,0 +1,60 @@
+* La normativa prescribe la inscripción en la portada de la
+  expresión «Trabajo de Fin de Grado», pero mi propuesta
+  utiliza las minúsculas.
+
+* La facultad también parece que obliga a los alumnos a
+  utilizar en la portada una fuente propiedad de la sociedad
+  Monotype Imaging, que se ampara bajo la legislación de
+  Delaware, conocido refugio fiscal.
+
+  Si quieres generar automáticamente la portada, hay que
+  saltarse esta obligación y usar una fuente libre parecida,
+  como hace mi propuesta.
+
+* Las páginas previas al comienzo de un capítulo salen
+  blancas.
+
+* Intenté ofrecer la posibilidad de incluir capítulos sin
+  numeración (p. ej., una introducción antes del
+  capítulo I). Podía haber aventurado una configuración en
+  ese sentido con referencias cruzadas válidas, pero no he
+  llegado a adaptar «hyperref» a ese sistema: llevaría
+  demasiado tiempo, y he priorizado que funcione ese
+  paquete.
+
+  Por lo tanto, desaconsejo el uso de «chapter*», con el fin
+  de mantener los hiperenlaces en condiciones.
+
+* Exploré también el uso de la numeración romana para los
+  capítulos, con numeración independiente para las secciones
+  de cada uno. Por los mismos motivos, lo he dejado de lado.
+
+* El uso de «ilustración» en vez de «figura» tal vez sea
+  considerado por muchos como una excentricidad.
+
+* Aspirando a gallifante:
+
+  — El formato de la bibliografía castellanizado en dos
+    aspectos: «and» pasa a ser «y» y se elimina la «serial
+    comma».
+
+* El «ejemplo» de trabajo es una especie de humorada que
+  puede resultar improcedente en muchas ocasiones. No lo he
+  escrito pensando en lo más adecuado para distribuir entre
+  el alumnado, aunque algunas partes puedan ser muy
+  apropiadas. Un ejemplo de algo que quitaría claramente es
+  la nota sobre Kim Basinger, que es un poco patética.
+
+  Es posible, además, que haya metido bien la pata con
+  alguna afirmación que revele mi ignorancia en la materia.
+
+* Como director de los trabajos, diría que es parte de tu
+  responsabilidad enterarte de los criterios de evaluación
+  que pululen por ahí. Igual resulta que el código o el
+  seudocódigo que he incluido en los ejemplos permite al
+  tribunal poner puntos negativos. Si es así, sería muy mala
+  idea distribuirlo.
+
+* Creo recordar que me insististe mucho con un índice de
+  ilustraciones o de otra cosa. No lo he añadido, siguiendo
+  mis gustos, pero no creo que me costara mucho.

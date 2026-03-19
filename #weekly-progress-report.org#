@@ -1,0 +1,62 @@
+
+#+TEMPLATE: Reporte para los estudiantes de TFG
+#+key: weekly-progress-report
+#+group: reports
+#+contributor: Domingo Gomez-Perez
+#+default-filename: weekly-progress-report.org
+
+#+TITLE: Progreso Semanal 
+#+AUTHOR: <replace: with your name>
+#+DATE: <replace: with today's date>
+
+# Todas las semanas, se tiene que crear un reporte. 
+
+
+* Resumen
+
+# Resuma brevemente el informe en 1-2 párrafos aquí. Este resumen debe
+# describir en forma concreta los objetivos actuales. Es posible que
+# quieras vincular a un archivo de proyecto que describe los objetivos
+# del proyecto. 
+
+El tema del TFG será estudiar un criptosistema que se llama "knapscack cryptosystem" (Criptosistema de la mochila). El TFG tendrá la definición, algoritmos de cifrado y descrifado y los ataques conocidos que rompen el criptosistema. Se tendrá que hacer una tabla de tiempos y hacer una comparación entre los diferentes ataques.
+
+* Resultados y discusión de la semana pasada
+
+
+# Use esta sección para describir lo que se completó la semana
+# pasada. Siéntase libre de incluir tablas, figuras y discusión. Los
+# «scripts» cortos están bien, pero los más largos deben ir en un
+# apéndice con un enlace de referencia. Esta sección debería ser lo
+# suficientemente completa como para que yo entienda lo que has hecho
+# y lo que significa. No necesita ser excesivamente larga. Usa
+# oraciones completas y un estilo de escritura científica. 
+
+
+
+
+
+
+* Estado actual
+# Describe brevemente el trabajo que se ha dedicado esta semana, entre
+# ellos literatura usada, experimentos, etc. Utilizar subsecciones
+# para organizar tu trabajo. 
+
+Asier se encargará de organizar reuniones, telemáticas o presenciales. Me escribiras un correo, con fecha y hora de reunión, además del último informe. Las reuniones en principio serán o martes o jueves, pero se pueden fijar libremente. Domingo tiene que pasarte un PDF y código para que rellenes.
+
+Todo el código, documentos, etc. se subirá a Overleaf. En principio, el código esta en C++, pero se explorara la posibilidad de que Asier porte el código a python.
+
+Se propone llegar a la primera convocatoria de defensa de TFG en matemáticas, que es alrededor de junio.
+Domingo tiene que subir la propuesta al tfgciencias.unican.es y la parte burocrática.
+Asier tienes que matricularte del TFG cuando se abra la convocatoria.
+Se requiere que el código y el tfg esten acabados un mes antes de la presentación, de forma que solo quede corregir el contenido. 
+
+
+
+
+* Bibliografía consultada
+# Briefly summarize one or two papers with citations you read that are related to your work. This does not need to be more than a few sentences per paper, and does not need to be more than one or two papers unless this was a major effort for the week.
+
+# Títulos de las referencias consultadas, con un corto resumen (de dos
+# parrafos máximo) sobre el contenido de la referencia.
+

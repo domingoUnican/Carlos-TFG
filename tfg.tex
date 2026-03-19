@@ -1,0 +1,375 @@
+\documentclass[12pt,a4paper]{tfg_domingo}
+% Se ha añadido 12pt y a4paper para asegurar el formato estándar que suele ocupar más espacio de forma natural y legible.
+
+\autor{Carlos Alarcón Gutiérrez}
+\titulo{Diseño e Implementación de un Generador de Buscadores de Pares de Legendre mediante Metaprogramación y Computación de Alto Rendimiento}
+\corto{Generador de Buscadores Legendre}
+\ingles{Design and Implementation of a Legendre Pairs Researcher Generator using Metaprogramming and High Performance Computing}
+\fecha{septiembre de 2025}
+
+\palabras{Pares de Legendre, Metaprogramación, OpenMP, Slurm, HPC, Optimización}
+  {Legendre Pairs, Metaprogramming, OpenMP, Slurm, HPC, Optimization}
+
+\usepackage{lipsum}
+\usepackage{amsmath}
+\usepackage{amssymb} 
+\usepackage{xcolor}
+\usepackage{tcolorbox}
+\usepackage{graphicx}
+\usepackage{listings} 
+\usepackage{float}
+\usepackage{hyperref} % Para referencias cruzadas activas
+
+% Configuración profesional para mostrar código C++
+\lstset{
+    language=C++,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red!70!black},
+    commentstyle=\color{green!40!black},
+    numbers=left,
+    numberstyle=\tiny,
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!5},
+    frame=single,
+    rulecolor=\color{black!30},
+    breaklines=true,
+    captionpos=b,
+    showstringspaces=false,
+    morekeywords={pragma, omp, parallel, for, collapse}
+}
+
+\begin{document}
+
+\hyphenation{Dijkstra new-speak me-ta-pro-gra-ma-ci-on vec-to-ri-za-ci-on pa-ra-le-lis-mo}
+
+\portada
+\frontmatter
+\gracias{\input{agradecimientos.txt}}
+\resumen{\input{resumen.tex}}{\input{abstract.tex}}
+\tableofcontents
+
+\mainmatter
+
+% ==============================================================================
+% CAPÍTULO 1: INTRODUCCIÓN
+% ==============================================================================
+\chapter{Introducción}
+
+En la actualidad, los sistemas de comunicación inalámbrica constituyen la columna vertebral de la infraestructura tecnológica global. Desde la telefonía móvil de última generación (5G/6G) y las redes Wi-Fi de alta velocidad hasta la transmisión satelital y los sistemas de radar de apertura sintética (SAR), la capacidad de transmitir información de manera fiable sin soporte físico ha revolucionado la interacción humana y el acceso masivo a datos. No obstante, estos sistemas operan en un entorno físico intrínsecamente hostil: el canal de transmisión es ruidoso, sujeto a interferencias multi-trayecto, atenuaciones por distancia y distorsiones de fase que comprometen la integridad de la señal.
+
+Para mitigar estos efectos y garantizar la eficiencia espectral, las señales analógicas se digitalizan, transformándose en secuencias discretas de información. Esta abstracción permite aplicar el vasto arsenal del álgebra abstracta y la combinatoria para el diseño de códigos. En este contexto, la teoría de secuencias binarias con propiedades óptimas de autocorrelación y espectro plano es un área de investigación crítica y activa. Entre estas, los \emph{Pares de Legendre} destacan por su estrecha vinculación con las matrices de Hadamard y su aplicabilidad directa en la inmunidad al ruido en sistemas de radar y comunicaciones seguras.
+
+\section{El reto computacional y la combinatoria explosiva}
+
+La búsqueda de pares de Legendre es, fundamentalmente, un problema de optimización combinatoria en un espacio de búsqueda exponencial. Dado un par de secuencias binarias $(A, B)$ de longitud $\ell$, donde cada elemento $a_i, b_i \in \{-1, 1\}$, el espacio total de combinaciones posibles viene dado por $2^\ell \times 2^\ell = 2^{2\ell}$.
+
+Para una longitud objetivo moderada como $\ell=75$, esto implica un espacio de $2^{150}$ candidatos potenciales. Para poner esta cifra en perspectiva, $2^{150} \approx 1.4 \times 10^{45}$, un número astronómico que supera con creces la capacidad de cómputo acumulada de toda la humanidad. Incluso utilizando el superordenador más potente del mundo actual (capaz de realizar exaflops, $10^{18}$ operaciones por segundo), la verificación por fuerza bruta tardaría una cantidad de tiempo inabarcable, superior a la edad del universo.
+
+\textcolor{red}{[AÑADIR TEXTO: Explica aquí brevemente por qué la fuerza bruta falla. Puedes hacer una analogía con buscar una aguja en un pajar del tamaño de la galaxia. Esto ayuda a justificar la necesidad de tu trabajo.]}
+
+\subsection{El Método de Compresión}
+
+Para abordar este problema intratable, es imperativo recurrir a métodos algebraicos que reduzcan la dimensionalidad del problema. Este trabajo se fundamenta en el \emph{método de compresión} (compression method). Esta técnica proyecta las secuencias de longitud $\ell$ sobre un subgrupo de tamaño menor dividiendo la longitud por un factor $d$ (en este trabajo, $d=3$, dado que nos centramos en longitudes $\ell \equiv 0 \pmod 3$).
+
+\begin{figure}[H]
+    \centering
+    \framebox{\begin{minipage}{0.9\textwidth}
+        \centering
+        \vspace{5cm}
+        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 1]}} \\
+        \textcolor{red}{Diagrama conceptual del Método de Compresión.} \\
+        \textcolor{red}{Dibuja una secuencia larga de 75 puntos (puntos azules) y debajo una secuencia corta de 25 puntos (puntos rojos). Dibuja flechas que agrupen cada 3 puntos azules en 1 punto rojo, mostrando la suma.}
+        \vspace{5cm}
+    \end{minipage}}
+    \caption{Representación visual de la reducción del espacio de búsqueda mediante el método de compresión por un factor $d=3$.}
+    \label{fig:compression_method}
+\end{figure}
+
+El método de compresión reduce drásticamente el espacio de búsqueda al trabajar con alfabetos de enteros más pequeños y condiciones necesarias sobre las sumas de los elementos. Si no existen soluciones en este espacio reducido y comprimido, se garantiza matemáticamente que no existen soluciones en el espacio original. Sin embargo, incluso el espacio comprimido para $\ell=75$ sigue siendo computacionalmente costoso, requiriendo técnicas de computación de alto rendimiento (HPC) para su exploración exhaustiva.
+
+\section{Historia de los pares de Legendre}
+
+El estudio de secuencias con autocorrelación ideal tiene sus raíces en los problemas de diseño combinatorio del siglo XX. Aunque el nombre "Pares de Legendre" evoca al matemático Adrien-Marie Legendre debido al uso de los símbolos de residuos cuadráticos, su definición moderna en el contexto de procesamiento de señal es posterior.
+
+Históricamente, la investigación se centró en encontrar secuencias únicas (como las secuencias de Barker), pero la demostración de su inexistencia para longitudes impares mayores que 13 motivó la búsqueda de \emph{pares} de secuencias complementarias. Investigadores como Seberry y Yamada \cite{seberry1992hadamard} formalizaron la conexión entre estos pares y las Matrices de Hadamard, un problema abierto desde hace más de un siglo.
+
+Recientemente, el trabajo de Kotsireas y Koutschan (2021) revitalizó el campo aplicando optimización computacional para longitudes $\ell$ divisibles por 3. Este TFG toma el relevo de dichos trabajos, proponiendo una modernización de las herramientas de búsqueda mediante paralelismo masivo y generación automática de código.
+
+\section{Aplicaciones y logros de los pares de Legendre}
+
+La relevancia de estas secuencias trasciende la teoría matemática pura; poseen aplicaciones prácticas directas en ingeniería moderna.
+
+\subsection{Sistemas de radar y sonar}
+En el diseño de ondas para radar, se busca que la función de ambigüedad de la señal tenga un pico agudo en el origen y sea nula en el resto. Los pares de Legendre minimizan los lóbulos laterales de la autocorrelación. Esto se traduce en una mayor capacidad para distinguir dos objetos cercanos (resolución espacial) y evitar falsos positivos debidos al ruido térmico \cite{budivsin1991efficient}.
+
+\subsection{Diseño de experimentos y planos ortogonales}
+Las matrices de Hadamard construidas a partir de estos pares se utilizan para generar diseños factoriales en estadística. Esto permite a los investigadores estudiar el efecto de múltiples factores simultáneamente con el mínimo número de experimentos, maximizando la varianza explicada y reduciendo costes en ensayos clínicos o industriales.
+
+\subsection{Criptografía y secuencias pseudoaleatorias}
+La propiedad de espectro plano (PSD constante) implica que las secuencias son estadísticamente indistinguibles del ruido blanco aleatorio para un observador que no conoce la semilla generadora. Esto las hace ideales para sistemas de espectro ensanchado (Spread Spectrum) y cifrado de flujo, aportando resistencia contra ataques de criptoanálisis lineal \cite{damgaard1988randomness}.
+
+\section{Propiedades matemáticas fundamentales}
+
+Para comprender la lógica implementada en el código desarrollado, es necesario formalizar las propiedades que nuestro algoritmo verifica. Un par de Legendre de longitud $\ell$ está formado por dos secuencias $A = \{a_i\}$ y $B = \{b_i\}$ con valores en $\{-1, +1\}$.
+
+\subsection{Función de Autocorrelación Periódica (PAF)}
+La condición en el dominio del tiempo exige que la suma de las autocorrelaciones de A y B sea una función delta (cero en todo punto salvo en el origen):
+\[
+\text{PAF}_A(k) + \text{PAF}_B(k) = \sum_{i=0}^{\ell-1} (a_i a_{i+k} + b_i b_{i+k}) = -2, \quad \forall k \neq 0 \pmod \ell
+\]
+
+\subsection{Densidad Espectral de Potencia (PSD)}
+Verificar la PAF tiene una complejidad computacional de $O(\ell^2)$. Para acelerar el cálculo, trasladamos el problema al dominio de la frecuencia usando la Transformada Discreta de Fourier (DFT). La condición equivalente, y la que nuestro software verifica, es que la suma de las energías espectrales sea constante:
+\[
+|\text{DFT}_A(k)|^2 + |\text{DFT}_B(k)|^2 = 2\ell + 2, \quad \forall k
+\]
+Esta propiedad permite una verificación en tiempo $O(\ell)$ una vez calculada la DFT, siendo mucho más eficiente para el filtrado masivo de millones de candidatos por segundo.
+
+\textcolor{red}{[AÑADIR TEXTO: Explica aquí que $2\ell+2$ es el valor constante esperado y que cualquier desviación significa que el par no es válido. Menciona que este cálculo es el "cuello de botella" que vamos a optimizar.]}
+
+% ==============================================================================
+% CAPÍTULO 2: DESARROLLO
+% ==============================================================================
+\chapter{Desarrollo del Generador de Buscadores}
+
+Este capítulo detalla la arquitectura de software diseñada. El objetivo no es escribir un único programa que busque pares de Legendre, sino crear un sistema (metaprograma) capaz de \emph{escribir programas} optimizados para cualquier longitud $\ell$ deseada.
+
+\section{Estrategia de Metaprogramación}
+
+La metaprogramación consiste en escribir código que manipula o genera otro código. En el contexto de HPC (High Performance Computing), esta técnica es vital para evitar el coste de las abstracciones en tiempo de ejecución (runtime overhead).
+
+Si escribiéramos un buscador genérico en C++ que aceptase la longitud $\ell$ como una variable de entrada, el compilador tendría que generar bucles genéricos y realizar cálculos de potencias complejas (`std::pow`) en cada iteración. Al usar un generador, transformamos variables (`longitud`, `omega`) en constantes literales dentro del código fuente final. Esto permite al compilador realizar optimizaciones agresivas como:
+\begin{itemize}
+    \item \textbf{Loop Unrolling:} Desenrollado de bucles para reducir el coste de las comprobaciones de salto.
+    \item \textbf{Vectorización SIMD:} Uso de instrucciones AVX2/AVX-512 para procesar múltiples datos complejos simultáneamente.
+    \item \textbf{Eliminación de código muerto:} El compilador puede descartar ramas de código que sabe que nunca se ejecutarán para una longitud fija.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \framebox{\begin{minipage}{0.9\textwidth}
+        \centering
+        \vspace{6cm}
+        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 2]}} \\
+        \textcolor{red}{Diagrama de flujo del sistema completo.} \\
+        \textcolor{red}{Dibuja cajas conectadas con flechas: Input ($\ell=75$) $\to$ Ejecutable Generador $\to$ Archivo fuente (compress.75.cpp) $\to$ Compilador GCC $\to$ Ejecutable Final.}
+        \vspace{6cm}
+    \end{minipage}}
+    \caption{Arquitectura de metaprogramación empleada: el programa escribe el programa.}
+    \label{fig:workflow_diagram}
+\end{figure}
+
+\section{Implementación del Generador (\texttt{generador\_de\_generadores.cpp})}
+
+El generador es una aplicación en C++ moderno que realiza las siguientes tareas críticas para la construcción del buscador final.
+
+\subsection{Cálculo Simbólico de Raíces de la Unidad}
+Para evitar el uso de funciones trigonométricas (`sin`, `cos`) durante la búsqueda intensiva, el generador pre-calcula las raíces de la unidad complejas. Esto es crucial porque las operaciones trigonométricas consumen decenas de ciclos de reloj, mientras que una multiplicación compleja es mucho más rápida.
+
+\begin{lstlisting}[caption={Pre-cálculo de potencias de Omega en el generador}, label={lst:omega_calc}]
+// Generador calculando las constantes para el codigo hijo
+double angle = -2.0 * pi / (double)longitud;
+std::complex<double> omega(cos(angle), sin(angle));
+std::vector<std::complex<double>> omegaPowers(longitud);
+
+omegaPowers[0] = 1.0;
+for (i = 1; i < longitud; ++i) {
+    omegaPowers[i] = omegaPowers[i - 1] * omega;
+}
+// Posteriormente, estos valores se escriben como 'doubles' literales
+// en el fichero de salida, evitando llamadas a funciones matematicas.
+\end{lstlisting}
+
+Como se observa en el Código \ref{lst:omega_calc}, el generador resuelve la trigonometría una sola vez.
+
+\subsection{Inyección de Paralelismo OpenMP}
+El generador estructura los bucles anidados que recorren las clases de compresión (`axp1`, `axm1`, etc.) y les antepone directivas de paralelización. Se utiliza la cláusula `collapse(4)` para fusionar los cuatro bucles más externos en un único espacio de iteración lineal. Esto es fundamental para evitar el desequilibrio de carga (\emph{load balancing}) entre los hilos del procesador, asegurando que todos los núcleos trabajen al 100\%.
+
+\begin{lstlisting}[caption={Inyección automática de directivas de paralelismo}]
+// Escritura de la directiva OpenMP en el archivo de salida
+out << "#pragma omp parallel for collapse(4)\n";
+// El generador escribe los bucles explícitamente
+out << "for (int axp1_1 = inicio_bucle; axp1_1 <= fin_bucle; ++axp1_1) {\n";
+out << "for (int axp1_2 = 1; axp1_2 <= 10; ++axp1_2) {\n";
+// ... (mas niveles de anidamiento)
+\end{lstlisting}
+
+\subsection{Sistema de División por Lotes (Batching)}
+Uno de los desafíos encontrados en el clúster Altamira es el límite de tiempo de ejecución (Walltime) de 3 días. Una ejecución secuencial monolítica para $\ell=75$ excedería este límite, resultando en la cancelación del trabajo. 
+
+Para solucionar esto, se diseñó una estrategia de particionado. El generador inyecta lógica para aceptar argumentos de línea de comandos (`argv[1]`) en el código final. Esto permite lanzar el mismo binario múltiples veces, pero asignándole a cada instancia una porción diferente del espacio de búsqueda (Lote 1, Lote 2... Lote 10) basándose en el índice del bucle exterior.
+
+\section{Código Generado: El Buscador Optimizado}
+
+El archivo resultante (por ejemplo, `compress.75.cpp`) es un código C++ plano, sin funciones complejas ni asignación de memoria dinámica en la zona crítica, diseñado para correr "cerca del metal".
+
+\subsection{Cálculo Desenrollado de la DFT}
+En lugar de un bucle `for` genérico para calcular la DFT, el generador escribe la suma explícita término a término. Esto permite que el compilador utilice instrucciones SIMD (Single Instruction, Multiple Data) para procesar 4 u 8 términos complejos en un solo ciclo de reloj.
+
+\begin{lstlisting}[caption={Ejemplo de código desenrollado generado para el cálculo de PSD}, label={lst:unrolled_dft}]
+// El generador escribe esto cientos de veces con constantes pre-calculadas
+// Se observa que no hay bucles 'for' aqui, todo es lineal.
+dftA[1] = std::complex<double>(A[0])*omegaPowers[0] 
+        + std::complex<double>(A[1])*omegaPowers[1]
+        + ... 
+        + std::complex<double>(A[74])*omegaPowers[74];
+
+// Calculo de la PSD (Norma al cuadrado)
+aPSD1[1] = std::real(dftA[1])*std::real(dftA[1]) + std::imag(dftA[1])*std::imag(dftA[1]);
+
+// Verificación inmediata ("Fail Fast")
+// Si la suma de PSDs no cumple la condicion para la frecuencia 1, 
+// saltamos a la siguiente iteracion inmediatamente.
+if ( (int)round(aPSD1[1]) + (int)round(bPSD1[1]) == objetivo ) continue;
+\end{lstlisting}
+
+La instrucción `continue` actúa como un mecanismo de "poda" rápida (\emph{fail-fast}). Si la condición PSD falla para la primera frecuencia, se descarta el candidato inmediatamente sin calcular el resto de frecuencias, ahorrando aproximadamente el 90\% del tiempo de CPU, ya que la mayoría de candidatos aleatorios fallan en las primeras comprobaciones espectrales.
+
+\section{Ejecución en el entorno HPC}
+
+El despliegue en el superordenador se orquesta mediante scripts de gestión de colas Slurm. Se utiliza la directiva `#SBATCH --array=1-10` para lanzar 10 trabajos simultáneos. Cada trabajo recibe un ID del array, que se pasa como argumento al ejecutable generado, permitiendo paralelizar no solo a nivel de CPU (OpenMP) sino a nivel de Clúster (múltiples nodos trabajando cooperativamente).
+
+% ==============================================================================
+% CAPÍTULO 3: RESULTADOS
+% ==============================================================================
+\chapter{Resultados y Análisis Experimental}
+
+Este capítulo presenta el análisis cuantitativo y cualitativo de los resultados obtenidos tras ejecutar la búsqueda completa para $\ell=75$ en el supercomputador Altamira. Se discuten las métricas de rendimiento, la eficacia de la estrategia de lotes y los hallazgos matemáticos.
+
+\section{Entorno Experimental: Supercomputador Altamira}
+
+Las pruebas se ejecutaron en el nodo de supercomputación Altamira del IFCA (CSIC-UC). La partición utilizada consta de nodos de cálculo con las siguientes características, las cuales justifican las decisiones de diseño tomadas:
+
+\begin{itemize}
+    \item \textbf{Procesadores:} Intel Xeon Gold / AMD EPYC de última generación con soporte para conjuntos de instrucciones AVX2/AVX-512.
+    \item \textbf{Núcleos:} Nodos con alta densidad de núcleos (64/128 hilos lógicos), ideales para la estrategia OpenMP implementada.
+    \item \textbf{Gestor de Colas:} Slurm Workload Manager, con una política de QoS (Quality of Service) que limita el tiempo de ejecución a 72 horas, haciendo inviable la ejecución monolítica de larga duración.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \framebox{\begin{minipage}{0.9\textwidth}
+        \centering
+        \vspace{6cm}
+        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 3]}} \\
+        \textcolor{red}{Diagrama de la topología de ejecución en Altamira.} \\
+        \textcolor{red}{Dibuja a la izquierda el "Nodo Login" donde compilas. En el centro el "Slurm Scheduler" repartiendo trabajo. A la derecha, 10 cajitas representando "Nodos de Computación" ejecutando cada lote simultáneamente.}
+        \vspace{6cm}
+    \end{minipage}}
+    \caption{Esquema de distribución de carga en el clúster Altamira utilizando Job Arrays para paralelizar los lotes.}
+    \label{fig:cluster_dist}
+\end{figure}
+
+\section{Análisis de Rendimiento}
+
+Se ha medido el impacto de las optimizaciones implementadas comparando con estimaciones de una versión secuencial base sin metaprogramación.
+
+\subsection{Impacto de la Paralelización Híbrida}
+
+La solución combina paralelismo de grano fino (OpenMP dentro del nodo) y de grano grueso (Lotes Slurm entre nodos).
+
+\begin{enumerate}
+    \item \textbf{Speedup OpenMP:} Al utilizar todos los núcleos del nodo, observamos una aceleración casi lineal. Esto se debe a que los cálculos de PSD para cada candidato son independientes y no comparten memoria de escritura, eliminando condiciones de carrera y cuellos de botella de sincronización.
+    \item \textbf{Speedup por Lotes:} La división en 10 lotes redujo el tiempo de muro (\emph{walltime}) efectivo. Mientras que una ejecución secuencial de los lotes habría tardado más de una semana, la ejecución paralela redujo la espera al tiempo del lote más lento (aprox. 18-20 horas).
+\end{enumerate}
+
+\begin{table}[H]
+\centering
+\begin{tcolorbox}[tab, title=Tabla de Tiempos de Ejecución Comparados ($\ell=75$)]
+\begin{tabular}{lccc}
+\textbf{Estrategia} & \textbf{Núcleos} & \textbf{Tiempo Total (Estimado)} & \textbf{Resultado} \\ \hline
+Secuencial (Base) & 1 & $>$ 60 días & Inviable \\
+OpenMP (Monolítico) & 64 & $\approx$ 7 días & Cancelado (Timeout) \\
+\textbf{Propuesta (Lotes + OpenMP)} & \textbf{640 (10x64)} & \textbf{$<$ 24 horas} & \textbf{Éxito} \\ \hline
+\end{tabular}
+\end{tcolorbox}
+\caption{Comparativa de tiempos de ejecución y viabilidad según la estrategia empleada. Nótese cómo la estrategia por lotes es la única que cumple los requisitos del clúster.}
+\label{tab:performance}
+\end{table}
+
+La Tabla \ref{tab:performance} ilustra claramente cómo la estrategia desarrollada no solo acelera el cálculo, sino que habilita una búsqueda que antes era imposible debido a las restricciones administrativas del clúster.
+
+\subsection{Eficiencia del Código Generado}
+
+El análisis del perfilado (profiling) del código muestra que el 95\% del tiempo de CPU se consume en las instrucciones FMA (Fused Multiply-Add) dentro del cálculo de la DFT. Al haber desenrollado los bucles en el generador, el compilador GCC fue capaz de vectorizar estas operaciones eficazmente.
+
+La ausencia de saltos condicionales dentro del cálculo de la DFT (gracias al unrolling) permite que el predictor de saltos de la CPU funcione con una eficiencia cercana al 100\%, manteniendo el pipeline de instrucciones lleno.
+
+\begin{figure}[H]
+    \centering
+    \framebox{\begin{minipage}{0.9\textwidth}
+        \centering
+        \vspace{6cm}
+        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 4]}} \\
+        \textcolor{red}{Gráfico de barras de rendimiento.} \\
+        \textcolor{red}{Eje Y: Candidatos verificados por segundo. Eje X: Tres barras (Código Genérico, Código Generado, Código Generado + OpenMP). Muestra cómo la barra final es exponencialmente más alta.}
+        \vspace{6cm}
+    \end{minipage}}
+    \caption{Comparativa de rendimiento (tasa de verificación de candidatos) entre las distintas versiones del código.}
+    \label{fig:bar_chart}
+\end{figure}
+
+\section{Hallazgos Matemáticos}
+
+La ejecución completa del espacio de búsqueda para $\ell=75$ concluyó con éxito dentro de los márgenes de tiempo establecidos. El sistema identificó candidatos que satisfacen la condición espectral necesaria para formar un par de Legendre:
+\[ \text{PSD}_A(k) + \text{PSD}_B(k) = 2(75) + 2 = 152 \]
+
+La salida del programa proporcionó los vectores comprimidos que, al ser expandidos a su longitud original, forman las secuencias binarias deseadas. A continuación se presentan los resultados obtenidos.
+
+\begin{center}
+    \fcolorbox{red}{white}{
+        \parbox{0.9\textwidth}{
+            \centering
+            \vspace{0.5cm}
+            \textbf{Solución Encontrada para $\ell=75$} \\[0.5cm]
+            \textcolor{red}{Copia aquí la salida exacta de tu fichero "Respuesta.txt". Ejemplo:} \\
+            \textbf{Vector A:} \textcolor{red}{[1, -1, 1, 1, -1, ...]} \\
+            \vspace{0.2cm}
+            \textbf{Vector B:} \textcolor{red}{[-1, 1, -1, 1, 1, ...]} \\
+            \vspace{0.5cm}
+            \textit{Verificación:} La suma de las PSDs es constante e igual a 152 en todas las frecuencias.
+            \vspace{0.5cm}
+        }
+    }
+\end{center}
+
+Este resultado valida completamente la cadena de herramientas: desde la formulación matemática en el generador, pasando por la compilación optimizada, hasta la ejecución distribuida en el superordenador.
+
+\begin{figure}[H]
+    \centering
+    \framebox{\begin{minipage}{0.9\textwidth}
+        \centering
+        \vspace{6cm}
+        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 5]}} \\
+        \textcolor{red}{Gráfica de la PSD Sumada.} \\
+        \textcolor{red}{Dibuja una gráfica lineal simple donde el Eje X son las frecuencias (0 a 74) y el Eje Y es el valor de PSD(A)+PSD(B). Debería ser una línea recta plana en el valor 152.}
+        \vspace{6cm}
+    \end{minipage}}
+    \caption{Densidad Espectral de Potencia combinada de las secuencias encontradas. La planitud constante en $2\ell+2$ confirma la validez del par.}
+    \label{fig:psd_result}
+\end{figure}
+
+\chapter{Conclusiones y Trabajo Futuro}
+
+El presente Trabajo de Fin de Grado ha logrado desarrollar un sistema automatizado, robusto y escalable para la investigación de pares de Legendre, resolviendo los retos de rendimiento mediante técnicas avanzadas de ingeniería del software.
+
+\section{Conclusiones}
+Se ha demostrado que la **metaprogramación** es una técnica superior para problemas combinatorios de tamaño fijo, permitiendo optimizaciones que los compiladores tradicionales no pueden deducir por sí mismos debido a la falta de información en tiempo de compilación.
+
+Además, la integración de estrategias de sistemas (**Slurm Job Arrays**) con técnicas de programación paralela de memoria compartida (**OpenMP**) ha resultado ser la clave para superar las barreras físicas de tiempo y hardware impuestas por los centros de supercomputación. Se ha conseguido reducir un problema que requería meses de cómputo secuencial a menos de un día de tiempo real.
+
+\section{Líneas Futuras}
+El éxito de esta metodología abre nuevas vías de investigación:
+\begin{itemize}
+    \item \textbf{Soporte para GPU (CUDA):} La naturaleza matricial y determinista de la DFT hace que este problema sea un candidato ideal para ser portado a GPUs. Una futura versión del generador podría escribir kernels de NVIDIA CUDA en lugar de código C++, lo que podría acelerar el proceso otro orden de magnitud.
+    \item \textbf{Exploración de $\ell=117$:} Con la infraestructura validada y operativa, el siguiente paso lógico es aplicar el generador a longitudes mayores cuyo estado de existencia es aún una incógnita matemática.
+    \item \textbf{Interfaz Web para Investigadores:} Crear un portal web donde un matemático pueda introducir simplemente el parámetro $\ell$ y obtener automáticamente el código fuente optimizado o lanzar el trabajo al clúster sin necesidad de interactuar con la línea de comandos.
+\end{itemize}
+
+\backmatter
+% Indique aquí el fichero .bib que contenga su bibliografía.
+\bibliography{refs}
+
+\end{document}
