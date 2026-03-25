@@ -9,19 +9,6 @@
 // New version of gcd that works for negative numbers as well
 
 
-/* /\* Función auxiliar: busca en qué coset está un elemento *\/ */
-/* static int find_element_in_cosets(const CosetList *cl, size_t element) { */
-/*     for (size_t i = 0; i < cl->len; i++) { */
-/*         const Coset *c = &cl->data[i]; */
-/*         for (size_t j = 0; j < c->len; j++) { */
-/*             if (c->data[j] == element) { */
-/*                 return i;  // Devuelve el índice del coset */
-/*             } */
-/*         } */
-/*     } */
-/*     return -1;  // No encontrado (no debería pasar) */
-/* } */
-
 
 /* void legendre_sequence(int p, int q,  int *sequence, int flag) */
 /* { */

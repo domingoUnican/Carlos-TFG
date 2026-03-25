@@ -37,6 +37,8 @@ void dft(const double complex *x, double complex *X, size_t N);
  */
 void vec_mat(const double *x, const double *A, double *y, size_t m, size_t n);
 
+
+
 #ifdef __cplusplus
 }
 #endif
