@@ -47,7 +47,7 @@ int** read_pairs_file(const char *filename, size_t *rows, size_t *cols) {
     }
 
     if (line_count == 0 || max_cols == 0) {
-        fprintf(stderr, "ERROR: archivo vacío o formato inválido\n");
+        fprintf(stderr, "ERROR: archivo %s vacío o formato inválido\n", filename);
         fclose(file);
         return NULL;
     }

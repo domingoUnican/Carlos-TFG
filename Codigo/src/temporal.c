@@ -6,37 +6,8 @@
 #include <math.h>
 #include "pairs_reader.h"
 #define ALFABET_SIZE 2
-// New version of gcd that works for negative numbers as well
 
 
-/* /\* Función auxiliar: busca en qué coset está un elemento *\/ */
-/* static int find_element_in_cosets(const CosetList *cl, size_t element) { */
-/*     for (size_t i = 0; i < cl->len; i++) { */
-/*         const Coset *c = &cl->data[i]; */
-/*         for (size_t j = 0; j < c->len; j++) { */
-/*             if (c->data[j] == element) { */
-/*                 return i;  // Devuelve el índice del coset */
-/*             } */
-/*         } */
-/*     } */
-/*     return -1;  // No encontrado (no debería pasar) */
-/* } */
-
-
-/* void legendre_sequence(int p, int q,  int *sequence, int flag) */
-/* { */
-/*     sequence[0] = (q*q + 1)>> 1; // esto es dividir por 2, pero usando bit shift para enteros  */
-/*     for (int n = 1; n < p; n++) { */
-/*         int legendre_symbol = flag; */
-/*         for (int k = 1; k <= (p - 1) / 2; k++) { */
-/*             if ((n % p) == (k * k % p)) { */
-/*                 legendre_symbol =  - legendre_symbol ; // cambiar el signo */
-/*                 break; */
-/*             } */
-/*         } */
-/*         sequence[n] = (q*q + legendre_symbol * q) >> 1; */
-/*     } */
-/* } */
 
 /* int* generate_vector_for_combination(const CosetList *cl,  */
 /*                                         const int *combination,  */

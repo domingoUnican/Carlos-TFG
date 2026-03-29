@@ -13,21 +13,21 @@ extern "C" {
 
 /** Un coset como array dinámico de elementos. */
 typedef struct {
-    size_t *data;  ///< elementos del coset
-    size_t len;    ///< número de elementos
-    size_t cap;    ///< capacidad interna (para realloc)
+    int *data;  ///< elementos del coset
+    int len;    ///< número de elementos
+    int cap;    ///< capacidad interna (para realloc)
 } Coset;
 
 /** Lista de cosets (array dinámico de Coset). */
 typedef struct {
     Coset *data;   ///< array de cosets
-    size_t len;    ///< número de cosets
-    size_t cap;    ///< capacidad interna
-    size_t *positions;
+    int len;    ///< número de cosets
+    int cap;    ///< capacidad interna
+    int *positions;
 } CosetList;
 
 /* API principal que ya tenías */
-CosetList cyclotomic_cosets(size_t k, size_t N);
+CosetList cyclotomic_cosets(int k, int N);
 void free_cosetlist(CosetList *cl);
 void cosetlist_print(const CosetList *cl);
 
@@ -57,11 +57,14 @@ uint8_t* coset_membership_vector(const Coset *c, const CosetList *cl);
  * @param element elemento a localizar.
  * @return índice del coset que contiene 'element'; devuelve -1 si no aparece.
  */
-int find_element_in_cosets(const CosetList *cl, size_t element);
+int find_element_in_cosets(const CosetList *cl, int element);
 
+int* generate_vector_for_combination(const CosetList *cl, 
+                                        const int *combination, 
+                                        int N);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* CYCLOTOMIC_COSETS_H */
+#endif /* CYCLOTOMIC_COSETS_H */    

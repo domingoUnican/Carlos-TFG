@@ -9,9 +9,9 @@
 
 /* --------- utilidades internas ya presentes --------- */
 
-static size_t gcd_size(size_t a, size_t b) {
+static int gcd_size(int a, int b) {
     while (b != 0) {
-        size_t t = a % b;
+        int t = a % b;
         a = b;
         b = t;
     }
@@ -24,10 +24,10 @@ static void coset_init(Coset *c) {
     c->cap = 0;
 }
 
-static bool coset_push(Coset *c, size_t x) {
+static bool coset_push(Coset *c, int x) {
     if (c->len == c->cap) {
-        size_t new_cap = (c->cap ? c->cap * 2 : 8);
-        size_t *new_data = (size_t*)realloc(c->data, new_cap * sizeof(size_t));
+        int new_cap = (c->cap ? c->cap * 2 : 8);
+        int *new_data = (int*)realloc(c->data, new_cap * sizeof(int));
         if (!new_data) return false;
         c->data = new_data;
         c->cap = new_cap;
@@ -36,21 +36,21 @@ static bool coset_push(Coset *c, size_t x) {
     return true;
 }
 
-static void cosetlist_init(CosetList *cl, size_t N) {
+static void cosetlist_init(CosetList *cl, int N) {
     cl->data = NULL;
     cl->len = 0;
     cl->cap = 0;
-    cl->positions = (size_t*)calloc(N, sizeof(size_t));
+    cl->positions = (int*)calloc(N, sizeof(int));
     if (cl->positions) {
-        for (size_t i = 0; i < N; ++i) {
-            cl->positions[i] = (size_t)-1;
+        for (int i = 0; i < N; ++i) {
+            cl->positions[i] = -1;
         }
     }
 }
 
 static bool cosetlist_push(CosetList *cl, const Coset *c_in) {
     if (cl->len == cl->cap) {
-        size_t new_cap = (cl->cap ? cl->cap * 2 : 8);
+        int new_cap = (cl->cap ? cl->cap * 2 : 8);
         Coset *new_data = (Coset*)realloc(cl->data, new_cap * sizeof(Coset));
         if (!new_data) return false;
         cl->data = new_data;
@@ -62,7 +62,7 @@ static bool cosetlist_push(CosetList *cl, const Coset *c_in) {
 
 /* --------- API pública ya presente --------- */
 
-CosetList cyclotomic_cosets(size_t k, size_t N) {
+CosetList cyclotomic_cosets(int k, int N) {
     CosetList res;
     cosetlist_init(&res, N);
 
@@ -70,11 +70,11 @@ CosetList cyclotomic_cosets(size_t k, size_t N) {
         return res;
     }
 
-    size_t k_mod = k % N;
-    size_t g = gcd_size(k_mod, N);
+    int k_mod = k % N;
+    int g = gcd_size(k_mod, N);
     if (g != 1) {
         fprintf(stderr,
-                "Aviso: gcd(k,N) = %zu != 1. Las órbitas pueden ser cadenas que terminan en ciclos.\n",
+                "Aviso: gcd(k,N) = %d != 1. Las órbitas pueden ser cadenas que terminan en ciclos.\n",
                 g);
     }
 
@@ -84,14 +84,14 @@ CosetList cyclotomic_cosets(size_t k, size_t N) {
         return res;
     }
 
-    for (size_t start = 0; start < N; ++start) {
+    for (int start = 0; start < N; ++start) {
         if (visited[start]) continue;
 
         Coset c;
         coset_init(&c);
-        size_t coset_idx = res.len;
+        int coset_idx = res.len;
 
-        size_t x = start;
+        int x = start;
         while (!visited[x]) {
             if (!coset_push(&c, x)) {
                 fprintf(stderr, "Error: sin memoria al ampliar coset.\n");
@@ -123,7 +123,7 @@ void free_cosetlist(CosetList *cl) {
         if (cl) { cl->len = cl->cap = 0; }
         return;
     }
-    for (size_t i = 0; i < cl->len; ++i) {
+    for (int i = 0; i < cl->len; ++i) {
         free(cl->data[i].data);
         cl->data[i].data = NULL;
         cl->data[i].len = cl->data[i].cap = 0;
@@ -137,22 +137,22 @@ void free_cosetlist(CosetList *cl) {
 
 void cosetlist_print(const CosetList *cl) {
     if (!cl) { printf("(lista nula)\n"); return; }
-    printf("Se encontraron %zu cosets:\n", cl->len);
-    for (size_t i = 0; i < cl->len; ++i) {
+    printf("Se encontraron %d cosets:\n", cl->len);
+    for (int i = 0; i < cl->len; ++i) {
         const Coset *c = &cl->data[i];
-        printf("C%zu = { ", i);
-        for (size_t j = 0; j < c->len; ++j) {
-            printf("%zu", c->data[j]);
+        printf("C%d = { ", i);
+        for (int j = 0; j < c->len; ++j) {
+            printf("%d", c->data[j]);
             if (j + 1 < c->len) printf(", ");
         }
         printf(" }\n");
     }
 }
 
-int find_element_in_cosets(const CosetList *cl, size_t element)
+int find_element_in_cosets(const CosetList *cl, int element)
 {
     if (!cl || !cl->data) return -1;
-    return (cl->positions[element] == (size_t)-1) ? -1 : (int)cl->positions[element];
+    return (cl->positions[element] == (int)-1) ? -1 : cl->positions[element];
 }
 
 /* --------- NUEVAS FUNCIONES --------- */
@@ -167,10 +167,10 @@ bool coset_is_subset_of(const Coset *a, const Coset *b) {
         /* a no vacío no puede estar contenido en b vacío. */
         return false;
     }
-    for (size_t i = 0; i < a->len; ++i) {
-        size_t x = a->data[i];
+    for (int i = 0; i < a->len; ++i) {
+        int x = a->data[i];
         bool found = false;
-        for (size_t j = 0; j < b->len; ++j) {
+        for (int j = 0; j < b->len; ++j) {
             if (b->data[j] == x) { found = true; break; }
         }
         if (!found) return false;
@@ -190,12 +190,33 @@ uint8_t* coset_membership_vector(const Coset *c, const CosetList *cl) {
 
     if (!c || c->len == 0) {
         /* Si c es vacío, está contenido en todos: rellena con 1 */
-        for (size_t i = 0; i < cl->len; ++i) vec[i] = 1;
+        for (int i = 0; i < cl->len; ++i) vec[i] = 1;
         return vec;
     }
 
-    for (size_t i = 0; i < cl->len; ++i) {
+    for (int i = 0; i < cl->len; ++i) {
         vec[i] = coset_is_subset_of(c, &cl->data[i]) ? 1 : 0;
     }
     return vec;
 }
+
+/* Genera vector completo para una combinación dada de cosets. */
+int* generate_vector_for_combination(const CosetList *cl,
+                                         const int *combination,
+                                         int N) {
+    int *vector = (int*)calloc(N, sizeof(int));
+    if (!vector) {
+        fprintf(stderr, "ERROR: sin memoria para vector\n");
+        return NULL;
+    }
+
+    for (int  elem = 0; elem < N; ++elem) {
+        int coset_idx = find_element_in_cosets(cl, elem);
+        if (coset_idx >= 0) {
+            vector[elem] = combination[coset_idx];
+        }
+    }
+
+    return vector;
+}
+
