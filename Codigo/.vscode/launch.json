@@ -1,0 +1,21 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug build/app",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceFolder}/build/app",
+            "args": [
+                "${workspaceFolder}/temp/unica",
+                "${workspaceFolder}/temp/unica9"
+            ],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "MIMode": "lldb",
+            "preLaunchTask": "Build app (make)"
+        }
+    ]
+}

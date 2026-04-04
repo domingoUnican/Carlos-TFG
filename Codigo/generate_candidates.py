@@ -129,6 +129,11 @@ if __name__ == "__main__":
             fich.write(f'{" ".join([str(j) for j in i])} {" ".join([str(j) for j in dft_set[temp]])}\n')
     fich.close()
     print("Number of candidates: ", len(result))
+    with open(f"unicos_{L}_{C}.txt", "w") as fich:
+        for i in sorted(result):
+            fich.write(" ".join([str(j) for j in i]) + "\n")
+    
+    print("Number of candidates: ", len(result))
     caminos = caminos_grande(result)
     for contador, camino in enumerate(caminos):
         print(f"Camino {contador} con longitud {len(camino)}")
