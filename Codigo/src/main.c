@@ -7,7 +7,7 @@
 #include "pairs_reader.h"
 #include "cyclotomic_cosets.h"
 #define ALFABET_SIZE 2
-#define DEPTH 3
+#define DEPTH 15
 // New version of gcd that works for negative numbers as well
 
 
