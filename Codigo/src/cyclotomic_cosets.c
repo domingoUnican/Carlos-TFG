@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <string.h>
 
 /* --------- utilidades internas ya presentes --------- */
 
@@ -40,6 +41,7 @@ static void cosetlist_init(CosetList *cl, int N) {
     cl->data = NULL;
     cl->len = 0;
     cl->cap = 0;
+    cl->k = -1;
     cl->positions = (int*)calloc(N, sizeof(int));
     if (cl->positions) {
         for (int i = 0; i < N; ++i) {
@@ -65,6 +67,7 @@ static bool cosetlist_push(CosetList *cl, const Coset *c_in) {
 CosetList cyclotomic_cosets(int k, int N) {
     CosetList res;
     cosetlist_init(&res, N);
+    res.k = k;
 
     if (N == 0) {
         return res;
@@ -204,19 +207,18 @@ uint8_t* coset_membership_vector(const Coset *c, const CosetList *cl) {
 int* generate_vector_for_combination(const CosetList *cl,
                                          const int *combination,
                                          int N) {
-    int *vector = (int*)calloc(N, sizeof(int));
+    int *vector = (int*)malloc(N * sizeof(int));
+    memset(vector, 0, N * sizeof(int));
     if (!vector) {
         fprintf(stderr, "ERROR: sin memoria para vector\n");
         return NULL;
     }
-
-    for (int  elem = 0; elem < N; ++elem) {
-        int coset_idx = find_element_in_cosets(cl, elem);
-        if (coset_idx >= 0) {
-            vector[elem] = combination[coset_idx];
+    for (int k=0; combination[k] != -1 && k< cl->len; k++) {
+        Coset *c = &cl->data[combination[k]];
+        for (int i = 0; i < c->len; i++) {
+            vector[c->data[i]] = 1;
         }
-    }
-
+    }   
     return vector;
 }
 

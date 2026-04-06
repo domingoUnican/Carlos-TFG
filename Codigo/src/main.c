@@ -7,7 +7,7 @@
 #include "pairs_reader.h"
 #include "cyclotomic_cosets.h"
 #define ALFABET_SIZE 2
-#define DEPTH 15
+#define DEPTH 20
 // New version of gcd that works for negative numbers as well
 
 
@@ -87,6 +87,7 @@ typedef struct {
     double **depth_exploration_bound; // depth_exploration_bound[depth][j] = bound para frecuencia j al explorar profundidad depth
     size_t num_candidate_pairs2;
     size_t dimension_candidate_pairs2;
+    int pos_depth;
 } DFSContext;
 
 
@@ -124,11 +125,6 @@ static bool filter_dominating_positions_linear(int **pairs_temp, int num_rows, i
     if (positions[0] == -1) {
         return false;
     }
-    printf("Número de posiciones a filtrar: ");
-    for (int i = 0; positions[i] != -1; i++) {
-        printf("%d ", positions[i]);
-    }
-    printf("\n");
 
     int write_count = 0;
 
@@ -148,19 +144,6 @@ static bool filter_dominating_positions_linear(int **pairs_temp, int num_rows, i
         if (in_range) {
             positions[write_count++] = idx;
         }
-    }
-    printf("Número de posiciones después de filtrar: %d\n", write_count);
-    if (write_count == 0) {
-        printf("No se encontraron posiciones que cumplan el rango.\n");
-        printf("compresion: [");
-        for (int j = 0; j < dim; j++) {
-            printf("%d ", compression[j]);
-        }
-        printf("]\n");
-        printf("compresion_bound: [");
-        for (int j = 0; j < dim; j++) {
-            printf("%d ", compression_bound[j]);
-        }        printf("]\n");     
     }
     positions[write_count] = -1;
     return write_count > 0;
@@ -196,40 +179,34 @@ bool is_less_than_candidates(DFSContext *ctx, const int *sequence, const int *bo
     int num_candidate_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
     int **pairs_temp = (flag == 1) ? ctx->candidate_pairs1 : ctx->candidate_pairs2;
     int *positions = (flag == 1) ? ctx->positions_candidates1 : ctx->positions_candidates2;
-    int compression[dimension_candidate_pairs];
-    int compression_bound[dimension_candidate_pairs];
+    int *compression = malloc(dimension_candidate_pairs * sizeof(int));
+    int *compression_bound = malloc(dimension_candidate_pairs * sizeof(int));
 
     CompressSequence(ctx->N, dimension_candidate_pairs, sequence, compression);
     CompressSequence(ctx->N, dimension_candidate_pairs, bound_bit_sequence, compression_bound);
-    printf("Secuencia a comparar de dimension %d (flag=%d): [", dimension_candidate_pairs, flag);
-    for (int j = 0; j < ctx->N; j++) {
-        printf("%d ", sequence[j]);
-    }
-    printf("]\n");
-    printf("Secuencia de bound de dimension %d (flag=%d): [", dimension_candidate_pairs, flag);
-    for (int j = 0; j < ctx->N; j++) {
-        printf("%d ", bound_bit_sequence[j]);
-    }
-    printf("]\n");
-    printf("Compresión de la secuencia: [");
-    for (int j = 0; j < dimension_candidate_pairs; j++) {
-        printf("%d ", compression[j]);
-    }
-    printf("]\n");
-    printf("Compresión del bound: [");
-    for (int j = 0; j < dimension_candidate_pairs; j++) {
-        printf("%d ", compression_bound[j]);
-    }
-
     // compression_bound = compression - bound; luego usaremos como upper bound
     for (int j = 0; j < dimension_candidate_pairs; j++) {
         compression_bound[j] += compression[j];
     }
+    printf("Compression:      ");
+    for (int j = 0; j < dimension_candidate_pairs; j++) {
+        printf("%d,", compression[j]);
+    }
+    printf("\n");
+    printf("Compression bound: ");
+    for (int j = 0; j < dimension_candidate_pairs; j++) {
+        printf("%d,", compression_bound[j]);
+    }
+    printf("\n");
 
-    return filter_dominating_positions_linear(pairs_temp, num_candidate_pairs,
+
+    bool resultado =  filter_dominating_positions_linear(pairs_temp, num_candidate_pairs,
                                               dimension_candidate_pairs,
                                               compression, compression_bound,
                                               positions);
+    free(compression);
+    free(compression_bound);
+    return resultado;
 }
 
 
@@ -238,30 +215,33 @@ bool is_compression_of_candidates(const DFSContext *ctx, const int *sequence, in
     int dimension_candidate_pairs = (flag == 1) ? ctx->dimension_candidate_pairs1 : ctx->dimension_candidate_pairs2;
     int num_candidate_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
     int **pairs_temp = (flag == 1) ? ctx->candidate_pairs1 : ctx->candidate_pairs2;
-    int compression[dimension_candidate_pairs];
+    int *compression = malloc(dimension_candidate_pairs * sizeof(int));
     CompressSequence(ctx->N, dimension_candidate_pairs, sequence, compression);
     int pos = binary_search_sorted_pairs(pairs_temp, num_candidate_pairs, dimension_candidate_pairs, compression, 0);
+    free(compression);
     return (pos != -1);
 }
 
 bool check_bound(DFSContext *ctx) {
     int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
     int *temp0 = calloc(ctx->cl->len, sizeof(int));
+    int pos_temp=0;
     for (int j = ctx->coset_idx; j < ctx->cl->len; j++) {
-        temp0[j] = 1;
+        temp0[pos_temp++] = j;
     }
+    temp0[pos_temp] = -1; // marca el final de la lista
     int *temp1 = generate_vector_for_combination(ctx->cl, temp0, ctx->N);
+    printf("temp1:");
+    for (int j = 0; j < ctx->N; j++) {
+        printf("%d,", temp1[j]);
+    }
+    printf("\n");
     bool result = is_less_than_candidates(ctx, vector_bits, temp1, 1) && is_less_than_candidates(ctx, vector_bits, temp1, 0);
     free(vector_bits);
     free(temp1);
     free(temp0);
-    printf("Verificando bound para combinación actual en coset_idx=%d da resultado: %s", ctx->coset_idx, result ? "true" : "false" );
     if (!result) {
         return false;
-    }
-    printf("Combinación actual: ");
-    for (int j=0; j< ctx->N; j++){
-        printf("%d ", ctx->current_combination[j]);
     }
     double max_lower_bound = 0.0;
     int pos = 1;
@@ -272,9 +252,6 @@ bool check_bound(DFSContext *ctx) {
             max_lower_bound = lower_bound_psd;
             pos = j;
         }
-    }
-    if (max_lower_bound > ctx->threshold) {
-        printf("Poda por bound: max_lower_bound=%.2f en frecuencia %d supera el threshold=%.2f\n", max_lower_bound, pos, ctx->threshold);
     }
     return max_lower_bound <= ctx->threshold;
 }
@@ -308,11 +285,12 @@ bool is_valid_combination(const DFSContext *ctx) {
     return result;
 }
 
-void dfs_explore_combinations( DFSContext *ctx)
+void dfs_explore_combinations(DFSContext *ctx)
 {
-    // Caso base: hemos asignado todos los cosets
+    /* Caso base: hemos procesado todos los cosets.
+       current_combination es [coset_idx1, coset_idx2, ..., -1]
+       Verificar si cumple condición. */
     if (ctx->coset_idx == ctx->cl->len) {
-        // PODA: Si cumple la condición, guardar
         if (is_valid_combination(ctx)) {
             ctx->matches_found++;
             int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
@@ -336,62 +314,67 @@ void dfs_explore_combinations( DFSContext *ctx)
         }
         return;
     }
-    int objetivo[27] = {1, 1, 1, 1, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0};
     for (int alfabet_val = 0; alfabet_val < ALFABET_SIZE; alfabet_val++) {
-        ctx->current_combination[ctx->coset_idx] = alfabet_val;
-        for (int j = 0; j < ctx->N; j++) {
-           ctx->current_dft[j] = ctx->current_dft[j] + alfabet_val * ctx->dft_matrix[ctx->coset_idx][j];
-            ctx->current_psd[j] = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
+        double complex *current_dft_backup = malloc(ctx->N * sizeof(double complex));
+        int temporal_nuevo[45] = {0,1,0,0,0,0,1,1,1,0,1,1,1,0,1,0,0,0,0,1,1,1,0,0,1,1,1,0,1,1,0,0,1,0,1,1,1,0,0,0,1,0,0,1,1};
+        int *current_psd_backup = malloc(ctx->N * sizeof(int));
+        memcpy(current_dft_backup, ctx->current_dft, ctx->N * sizeof(double complex));
+        memcpy(current_psd_backup, ctx->current_psd, ctx->N * sizeof(int));
+        if (alfabet_val == 1){
+            ctx->current_combination[ctx->pos_depth] = ctx->coset_idx;
+            ctx->pos_depth++;
+            ctx->current_combination[ctx->pos_depth] = -1;
+            for (int j = 0; j < ctx->N; j++) {
+              ctx->current_dft[j] = ctx->current_dft[j] + ctx->dft_matrix[ctx->coset_idx][j];
+                ctx->current_psd[j] = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
+            }
         }
-
+        bool is_interesting = temporal_nuevo[ctx->coset_idx] == alfabet_val;
         int *positions_backup1 = malloc((ctx->num_candidate_pairs1 + 1) * sizeof(int));
         int *positions_backup2 = malloc((ctx->num_candidate_pairs2 + 1) * sizeof(int));
         memcpy(positions_backup1, ctx->positions_candidates1, (ctx->num_candidate_pairs1 + 1) * sizeof(int));
         memcpy(positions_backup2, ctx->positions_candidates2, (ctx->num_candidate_pairs2 + 1) * sizeof(int));
         // Actualizar current_bound para el siguiente coset_idx con bounds precomputados.
         ctx->coset_idx++;
-        memcpy(ctx->current_bound, ctx->depth_exploration_bound[ctx->coset_idx], ctx->N * sizeof(double));       
-        bool can_prune = false;
-        for (int j=0; j<ctx->coset_idx; j++){
-            if ((ctx->current_combination[j] != objetivo[j])  ){
-                can_prune = true;
-                break;
-            }
-        }
-        printf("Explorando coset_idx=%d, valor=%d, can_prune=%d\n", ctx->coset_idx, alfabet_val, can_prune);
-        if (check_bound(ctx) && !can_prune) {
+        memcpy(ctx->current_bound, ctx->depth_exploration_bound[ctx->coset_idx], ctx->N * sizeof(double));  
+        if (check_bound(ctx) && is_interesting) {
             dfs_explore_combinations(ctx);
         }
-        if (!can_prune) {
-            printf("Combinación válida encontrada en coset_idx=%d: ", ctx->coset_idx);
-            printf("\ncota actual: [");
+        if (is_interesting && !check_bound(ctx)) {
+            printf("Poda en coset_idx=%d, alfabet_val=%d\n", ctx->coset_idx - 1, alfabet_val);
+            int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
+            printf("Vector actual: ");
             for (int j = 0; j < ctx->N; j++) {
-                printf("%.2f ", pow(ctx->current_bound[j],1.0));
+                printf("%u,", vector_bits[j]);
             }
-            printf("]\nDFT actual: [");
-            for (int j = 0; j < ctx->N; j++) {
-                printf("%.2f ", pow(cabs(ctx->current_dft[j]), 2.0));
+            printf("\n");
+            printf("temporal_nuevo:");
+            for (int j = 0; j < 45; j++) {
+                printf("%d,", temporal_nuevo[j]);
             }
-            printf("]\nCombinación actual: ");
-            for (int j=0; j< ctx->N; j++){      
-                printf("%d ", ctx->current_combination[j]);
+            printf("\n");
+            printf("current combination: ");
+            for (int j = 0; j <= ctx->pos_depth; j++) {
+                printf("%d,", ctx->current_combination[j]);
             }
-            printf("]\n");
-            bool temp_bool;
-            temp_bool = check_bound(ctx);
-            printf("\n%s\n", temp_bool? "Cumple el bound para seguir explorando" : "No cumple el bound, se poda esta rama") ;
-            printf("***********************************************************\n");
+            printf("\n");
+
+            free(vector_bits);
         }
         memcpy(ctx->positions_candidates1, positions_backup1, (ctx->num_candidate_pairs1 + 1) * sizeof(int));
         memcpy(ctx->positions_candidates2, positions_backup2, (ctx->num_candidate_pairs2 + 1) * sizeof(int));
+        memcpy(ctx->current_dft, current_dft_backup, ctx->N * sizeof(double complex));
+        memcpy(ctx->current_psd, current_psd_backup, ctx->N * sizeof(int));
         free(positions_backup1);
         free(positions_backup2);
+        free(current_dft_backup);
+        free(current_psd_backup);
         ctx->coset_idx--;
-        ctx->current_combination[ctx->coset_idx] = 0;
-        for (int j = 0; j < ctx->N; j++) {
-            ctx->current_dft[j] = ctx->current_dft[j] - alfabet_val * ctx->dft_matrix[ctx->coset_idx][j];
-            ctx->current_psd[j] = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
+        if (alfabet_val == 1) {
+            ctx->pos_depth--;
+            ctx->current_combination[ctx->pos_depth] = -1;
         }
+        
     }
 }
 
@@ -471,21 +454,39 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
 
             // Construir bound_seq: prefijo fijo a 1, sufijo variable [i, num_cosets)
             memset(bound_arr, 0, ctx->cl->len * sizeof(int));
-            for (int k = 0; k < start_coset; k++) bound_arr[k] = 1;
+            for (int k = 0; k < start_coset; k++) bound_arr[k] = k;
+            bound_arr[start_coset] = -1; // marca el inicio del sufijo variable
             int *bound_seq = generate_vector_for_combination(ctx->cl, bound_arr, N);
 
             int num_combinations = 1 << d; // 2^d
             for (int combo = 0; combo < num_combinations; combo++) {
                 memset(combo_arr, 0, ctx->cl->len * sizeof(int));
+                int pos = 0;
                 for (int k = 0; k < d; k++) {
-                    combo_arr[start_coset + k] = (combo >> k) & 1;
+                    if ((combo >> k) & 1) {
+                        combo_arr[pos++] = start_coset + k;
+                    }
                 }
+                combo_arr[pos] = -1; // marca el final de la combinación
                 int *seq = generate_vector_for_combination(ctx->cl, combo_arr, N);
-
                 memcpy(ctx->positions_candidates1, pos1_backup, (ctx->num_candidate_pairs1 + 1) * sizeof(int));
                 memcpy(ctx->positions_candidates2, pos2_backup, (ctx->num_candidate_pairs2 + 1) * sizeof(int));
-
-                bool passes = is_less_than_candidates(ctx, seq, bound_seq, 1) &&
+                
+                bool psd_below_threshold = true;
+                for (int j = 1; j < N; j++) {
+                    double complex val = 0.0;
+                    for (int k = 0; k < d; k++) {
+                        int bit = (combo >> k) & 1;
+                        val += bit * ctx->dft_matrix[start_coset + k][j];
+                    }
+                    double psd_val = pow(cabs(val), 2.0);
+                    if (psd_val > ctx->threshold) {
+                        psd_below_threshold = false;
+                        break;
+                    }
+                }
+                bool passes = psd_below_threshold &&
+                              is_less_than_candidates(ctx, seq, bound_seq, 1) &&
                               is_less_than_candidates(ctx, seq, bound_seq, 0);
 
                 if (passes) {
@@ -568,8 +569,9 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     legendre_sequence(p, q, compression_b, -1);
     //printf("El valor de cl->len es: %zu\n", cl->len);
     // Calcular DFT y PSD para cada coset
+    combination[1] = -1;
     for (int i = 0; i < cl->len; i++) {
-        combination[i] = 1;
+        combination[0] = i;
         int *vector_bits = generate_vector_for_combination(cl, combination, N);
         //printf("\n Vector generado para el coset %zu\n", i);
         binary_to_complex(vector_bits, time_domain, N);
@@ -581,9 +583,9 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
             bound_psd[j] += psd_matrix[i][j];
         }
         free(vector_bits);
-        combination[i] = 0;
+        combination[0] = 0;
     }
-
+    combination[1] = -1;
     free(time_domain);
     free(freq_domain);
 
@@ -691,7 +693,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .num_candidate_pairs2 = rows2,
         .dimension_candidate_pairs2 = cols2,
         .current_bound = current_bound,
-        .depth_exploration_bound = NULL
+        .depth_exploration_bound = NULL,
+        .pos_depth = 0
     };
     ctx.depth_exploration_bound =  compute_depth_exploration_bounds(&ctx);
     // Inicializar current_bound con la suma de valores absolutos de la DFT para cada frecuencia
@@ -720,26 +723,6 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         fclose(f_cte);
         return;
     }
-    /*
-    if (ctx.depth_exploration_bound != NULL) {
-        for (int j = 0; j < N; j++) {
-            ctx.current_bound[j] += ctx.depth_exploration_bound[DEPTH][j];
-            for (int i = DEPTH; i < cl->len; i++) {
-                ctx.current_bound[j] -= cabs(ctx.dft_matrix[i][j]);
-            }
-        }
-    } 
-    */
-    // Imprimir depth_exploration_bound por filas (i = 0..num_cosets), con 2 decimales.
-    printf("Matriz depth_exploration_bound (filas por coset_idx):\n");
-    for (int i = 0; i <= ctx.num_cosets; i++) {
-        printf("Fila %d: ", i);
-        for (int j = 0; j < N; j++) {
-            printf("%.2f%s", ctx.depth_exploration_bound[i][j], (j + 1 < N) ? " " : "");
-        }
-        printf("\n");
-    }
-
     printf("\n=== EXPLORACIÓN DFS (N=%d, cosets=%d) ===\n", N, cl->len);
     printf("Condicion: Max(PSD) < %.2f\n\n", threshold);
     // Iniciar DFS desde coset 0
@@ -784,9 +767,10 @@ int main(int argc, char **argv) {
     const char *pairs_file1 = argv[1];
     const char *pairs_file2 = argv[2];
 
-    int p = 3;
+    int p = 5;
     int q = 3;
     int N = (p*q*q);
+    printf("N=%d\n", N);
     int tamanos[N];
     for (int i = 0; i < N; i++) {
         tamanos[i] = -1;

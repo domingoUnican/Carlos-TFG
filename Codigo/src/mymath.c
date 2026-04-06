@@ -148,3 +148,23 @@ void CompressSequence(int N, int p, const int *sequence, int *compressed) {
         }
     }
 }
+
+int* binomial_coefficients(int d) {
+    if (d < 0) {
+        fprintf(stderr, "Error: d debe ser >= 0\n");
+        return NULL;
+    }
+
+    int *result = (int*)malloc((d + 1) * sizeof(int));
+    if (!result) {
+        fprintf(stderr, "Error: sin memoria para coeficientes binomiales\n");
+        return NULL;
+    }
+
+    result[0] = 1;
+    for (int i = 1; i <= d; i++) {
+        result[i] = result[i - 1] * (d - i + 1) / i;
+    }
+
+    return result;
+}

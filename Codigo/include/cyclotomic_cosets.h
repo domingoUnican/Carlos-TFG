@@ -24,6 +24,7 @@ typedef struct {
     int len;    ///< número de cosets
     int cap;    ///< capacidad interna
     int *positions;
+    int k;      ///< valor de k usado para construir esta lista de cosets
 } CosetList;
 
 /* API principal que ya tenías */

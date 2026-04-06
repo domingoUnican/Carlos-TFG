@@ -57,6 +57,18 @@ int lex_cmp(const int *a, const int *b, size_t dim);
 int binary_search_sorted_pairs(int **sorted_list, size_t num_rows,
                                       size_t dim, const int *key, int flag);
 void CompressSequence(int N, int p, const int *sequence, int *compressed);
+
+/**
+ * @brief Calcula los coeficientes binomiales C(d, i) para i = 0..d.
+ *        Esto representa cuántas formas hay de sumar i con d sumandos que pueden ser 0 o 1.
+ *
+ * @param d  Número de sumandos (0 o 1).
+ * @return   Array de d+1 elementos donde resultado[i] = C(d, i).
+ *           Debes liberar el resultado con free().
+ *           Devuelve NULL si d < 0 o falla la asignación de memoria.
+ */
+int* binomial_coefficients(int d);
+
 #ifdef __cplusplus
 }
 #endif
