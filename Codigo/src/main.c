@@ -12,7 +12,107 @@
 #define DEPTH 15
 // ...existing code...
 
+void show_specific_lines(size_t line1, size_t line2, FILE *lp_file, size_t N, const char *path_combinations) {
+    FILE *file = fopen(path_combinations, "r");
+    if (!file) {
+        printf("ERROR: No se pudo abrir '%s'\n", path_combinations);
+        return;
+    }
 
+    char *line = malloc(N + 8);
+    if (!line) { fclose(file); return; }
+
+    size_t line_idx = 0;
+    bool got_line1 = false;
+    bool got_line2 = false;
+    while (fgets(line, (int)(N + 8), file) != NULL) {
+        if (line_idx == line1 || line_idx == line2) {
+            size_t len = strlen(line);
+            while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
+                line[--len] = '\0';
+            }
+            fprintf(lp_file, "%s\n", line);
+            if (line_idx == line1) got_line1 = true;
+            if (line_idx == line2) got_line2 = true;
+            if (got_line1 && got_line2) {
+                break;
+            }
+        }
+        line_idx++;
+    }
+    fprintf(lp_file, "\n");
+
+    free(line);
+    fclose(file);
+}
+
+
+void find_matches_files(size_t N, size_t row_ints, char* path_psd, char* path_cte, char* path_lp, char* path_comb) {
+    FILE *f1 = fopen(path_psd, "rb");
+    FILE *f2 = fopen(path_cte, "rb");
+    FILE *lp_file = fopen(path_lp, "a"); // acumulamos los LP encontrados en cada llamada
+    
+    if (!f1 || !f2 || !lp_file) {
+        if (f1) fclose(f1); if (f2) fclose(f2);
+        return;
+    }
+
+    size_t L_dft = row_ints; // Cantidad de enteros por bloque binario
+    size_t block_size = L_dft * sizeof(int);
+    // 1. Cargar fichero 2 en memoria para evitar accesos a disco
+    size_t capacity = 1000;
+    size_t total_lines2 = 0;
+
+    int *all_lines2 = malloc(capacity * block_size);
+
+    int *temp_buffer = malloc(block_size);
+
+    while (fread(temp_buffer, sizeof(int), L_dft, f2) == L_dft) {
+        if (total_lines2 >= capacity) {
+            capacity *= 2;
+            all_lines2 = realloc(all_lines2, capacity * block_size);
+        }
+        // Copiamos el bloque al gran buffer de memoria
+        memcpy(&all_lines2[total_lines2 * L_dft], temp_buffer, block_size);
+        total_lines2++;
+    }
+
+    printf("Searching for LPS...\n");
+    bool LP_found = false; // flag para parar si encuentra el primer LP
+    int *line1_data = malloc(block_size);
+    size_t line1_num = 0;
+
+    // 2. Leer F1 bloque a bloque y comparar contra todo F2 en memoria
+    rewind(f1);
+    while (!LP_found && fread(line1_data, sizeof(int), L_dft, f1) == L_dft) {
+        
+        size_t j = 0;
+        while (j < total_lines2 && !LP_found) {
+            
+            // Condición: i < j para evitar duplicados y simetrías
+            if (line1_num < j) {
+                // Comparamos el bloque actual de f1 con el bloque j en RAM de f2
+                if (memcmp(line1_data, &all_lines2[j * L_dft], block_size) == 0) {
+                    
+                    // Si coinciden los espectros, es un Legendre Pair
+                    show_specific_lines(line1_num, j, lp_file, N, path_comb);
+                    
+                    printf("LEGENDRE PAIR! Indices: %zu y %zu\n", line1_num, j);
+                    LP_found = true; 
+                    // El !LP_found en la condición del while romperá el bucle j automáticamente
+                }
+            }
+            j++;
+        }
+        line1_num++;
+    }
+
+    // Limpieza
+    free(all_lines2);
+    free(temp_buffer);
+    free(line1_data);
+    fclose(f1); fclose(f2); fclose(lp_file);
+}
 
 int gcd(int a, int b) {
     a = abs(a);
@@ -62,6 +162,10 @@ typedef struct {
     FILE *f_comb;
     FILE *f_psd;
     FILE *f_cte;
+    char comb_filename[512];
+    char psd_filename[512];
+    char cte_filename[512];
+    char lp_filename[512];
     size_t matches_found;
     double threshold;
     //double constant; constant is the same as threshold.
@@ -582,16 +686,22 @@ void dfs_explore_combinations(DFSContext *ctx)
             }
             fprintf(ctx->f_comb, "\n");
 
-            for (int j = 1; j < ctx->spectrum_size; j++) {
+            // Recalcular DFT exacta desde la secuencia actual
+            double complex *time_domain_exact = malloc(ctx->N * sizeof(double complex));
+            binary_to_complex(ctx->current_sequence, time_domain_exact, ctx->N);
+            dft(time_domain_exact, ctx->current_dft, ctx->N);
+            free(time_domain_exact);
+
+            for (int j = 1; j < ctx->N; j++) {
                 int psd_val = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
-                fprintf(ctx->f_psd, "%d%s", psd_val, (j + 1 < ctx->spectrum_size) ? " " : "");
+                fwrite(&psd_val, sizeof(int), 1, ctx->f_psd);
 
                 int transformed = (int)rint(ctx->threshold - psd_val);
-                fprintf(ctx->f_cte, "%d%s", transformed, (j + 1 < ctx->spectrum_size) ? " " : "");
+                fwrite(&transformed, sizeof(int), 1, ctx->f_cte);
             }
-            fprintf(ctx->f_psd, "\n");
-            fprintf(ctx->f_cte, "\n");
-
+            fflush(ctx->f_psd);
+            fflush(ctx->f_cte);
+            find_matches_files(ctx->N, (size_t)(ctx->N - 1), ctx->psd_filename, ctx->cte_filename, ctx->lp_filename, ctx->comb_filename);
             free(vector_bits);
         }
         return;
@@ -750,21 +860,13 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
                 combo_arr[pos] = -1;
                 int *seq = generate_vector_for_combination(ctx->cl, combo_arr, N);
                 
-                bool psd_below_threshold = true;
-                for (int j = 1; j < ctx->spectrum_size; j++) {
-                    double complex val = 0.0;
-                    for (int k = 0; k < d; k++) {
-                        int bit = (combo >> k) & 1;
-                        val += bit * ctx->dft_matrix[start_coset + k][j];
-                    }
-                    double psd_val = pow(cabs(val), 2.0);
-                    if (psd_val > ctx->threshold) {
-                        psd_below_threshold = false;
-                        break;
-                    }
-                }
-                bool passes = psd_below_threshold &&
-                              is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 1) &&
+                /*
+                 * No podar por PSD del sufijo aislado: aunque prefijo y sufijo
+                 * no compartan unos en tiempo, en frecuencia si puede haber
+                 * cancelacion entre ambos. Este bound debe seguir siendo
+                 * conservador respecto al prefijo actual.
+                 */
+                bool passes = is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 1) &&
                               is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 0);
 
                 if (passes) {
@@ -805,8 +907,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     if (!cl || cl->len == 0) return;
 
     double threshold = ((double)N + 1.0) / 2.0;
-    int spectrum_size = (N / 2) + 1;
-    //int spectrum_size = 20;
+    //int spectrum_size = (N  + 1)/2;
+    int spectrum_size = 20;
     double complex **dft_matrix = malloc(cl->len * sizeof(double complex *));
     int **psd_matrix = malloc(cl->len * sizeof(int *));
 
@@ -917,6 +1019,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     char comb_filename[512];
     char psd_filename[512];
     char cte_filename[512];
+    char lp_filename[512];
     char output_dir[512];
     const char *pairs_name1 = path_basename(pairs_file1);
     const char *pairs_name2 = path_basename(pairs_file2);
@@ -925,10 +1028,11 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     snprintf(comb_filename, sizeof(comb_filename), "%s/%s_%s_combinations.txt", output_dir, pairs_name1, pairs_name2);
     snprintf(psd_filename, sizeof(psd_filename), "%s/%s_%s_dft.txt", output_dir, pairs_name1, pairs_name2);
     snprintf(cte_filename, sizeof(cte_filename), "%s/%s_%s_cte-dft.txt", output_dir, pairs_name1, pairs_name2);
+    snprintf(lp_filename, sizeof(lp_filename), "%s/%s_%s_lp.txt", output_dir, pairs_name1, pairs_name2);
 
     FILE *f_comb = fopen(comb_filename, "w");
-    FILE *f_psd = fopen(psd_filename, "w");
-    FILE *f_cte = fopen(cte_filename, "w");
+    FILE *f_psd = fopen(psd_filename, "wb");
+    FILE *f_cte = fopen(cte_filename, "wb");
     size_t rows1, cols1;
     int **candidate1 = read_pairs_file(pairs_file1, &rows1, &cols1);
     size_t rows2, cols2;
@@ -1092,6 +1196,10 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .f_comb = f_comb,
         .f_psd = f_psd,
         .f_cte = f_cte,
+        .comb_filename = "",
+        .psd_filename = "",
+        .cte_filename = "",
+        .lp_filename = "",
         .matches_found = 0,
         .threshold = threshold,
         .N = N,
@@ -1141,6 +1249,10 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .bitset_order2 = bitset_order2,
         .bitset_score2 = bitset_score2
     };
+    snprintf(ctx.comb_filename, sizeof(ctx.comb_filename), "%s", comb_filename);
+    snprintf(ctx.psd_filename, sizeof(ctx.psd_filename), "%s", psd_filename);
+    snprintf(ctx.cte_filename, sizeof(ctx.cte_filename), "%s", cte_filename);
+    snprintf(ctx.lp_filename, sizeof(ctx.lp_filename), "%s", lp_filename);
     reorder_cosets_by_candidate_pairs(&ctx);
     
     // Actualizar punteros locales después de reordenación

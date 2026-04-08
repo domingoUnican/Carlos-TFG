@@ -1,6 +1,6 @@
 
 CC      := cc
-CFLAGS  := -std=c11 -g -O0 -Wall -Wextra -I./include
+CFLAGS  := -std=c11 -O2 -Wall -Wextra -I./include
 BUILD   := build
 SRC     := src
 BIN     := $(BUILD)/app
