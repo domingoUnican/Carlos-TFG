@@ -9,7 +9,7 @@
 #include "pairs_reader.h"
 #include "cyclotomic_cosets.h"
 #define ALFABET_SIZE 2
-#define DEPTH 15
+#define DEPTH 22
 #define DIMENSIONS 6
 // ...existing code...
 
@@ -177,15 +177,17 @@ typedef struct {
     char cte_filename[512];
     char lp_filename[512];
     size_t matches_found;
-    double threshold;
+    int threshold;
     //double constant; constant is the same as threshold.
     double complex **dft_matrix;
+    double complex **dft_backup;
     int **psd_matrix;
     int N;
     int num_cosets;
     double complex *current_dft;
     int *bound_psd;
     int *current_sequence;
+    int *current_psd; 
     int *remaining_bits;
     int *compresion_1;
     int *compresion_2;
@@ -215,6 +217,8 @@ typedef struct {
     int *suffix_ones;
     bool *is_less_compression_a;
     bool *is_less_compression_b;
+    bool **is_less_candidates_1;
+    bool **is_less_candidates_2;
     uint64_t ***ge_bitsets1;
     uint64_t ***le_bitsets1;
     size_t bitset_words1;
@@ -412,6 +416,37 @@ static void free_prefix_range_index(PrefixRangeIndex *index) {
     for (int i = 0; i < DIMENSIONS; i++) {
         index->strides[i] = 0;
     }
+}
+
+static bool **alloc_bool_matrix_true(size_t rows, size_t cols) {
+    bool **matrix = malloc(rows * sizeof(bool *));
+    if (!matrix) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < rows; i++) {
+        matrix[i] = malloc(cols * sizeof(bool));
+        if (!matrix[i]) {
+            for (size_t k = 0; k < i; k++) {
+                free(matrix[k]);
+            }
+            free(matrix);
+            return NULL;
+        }
+        for (size_t j = 0; j < cols; j++) {
+            matrix[i][j] = true;
+        }
+    }
+
+    return matrix;
+}
+
+static void free_bool_matrix(bool **matrix, size_t rows) {
+    if (!matrix) return;
+    for (size_t i = 0; i < rows; i++) {
+        free(matrix[i]);
+    }
+    free(matrix);
 }
 
 static bool build_prefix_range_index(const int *const *pairs, size_t num_pairs,
@@ -791,11 +826,8 @@ bool is_less_than_candidates(DFSContext *ctx, int flag)
     if (!ctx || !ctx->compresion_3 || !ctx->bound_contrassion_3 || !ctx->compression_a || !ctx->compression_b || ctx->p <= 0) {
         return false;
     }
-
-    bool passes_a = true;
-    bool passes_b = true;
+    Coset *selected_coset = &ctx->cl->data[ctx->coset_idx - 1];
     if (flag == 1){
-        Coset *selected_coset = &ctx->cl->data[ctx->coset_idx - 1];
         for (int t = 0; t < selected_coset->len; t++) {
             int elem = selected_coset->data[t];
             int l = ctx->compresion_3[elem % ctx->p];
@@ -808,49 +840,31 @@ bool is_less_than_candidates(DFSContext *ctx, int flag)
             ctx->is_less_compression_a[ctx->coset_idx] = p_a && (l <= ta && ta <= u);
             ctx->is_less_compression_b[ctx->coset_idx] = p_b && (l <= tb && tb <= u);
 
-    }
-    if (! ctx->is_less_compression_a[ctx->coset_idx] && ! ctx->is_less_compression_b[ctx->coset_idx]) {
-        return false;
-    }
-    for (int j = 0; (j < ctx->p && (flag == 1) && (passes_a || passes_b)); j++) {
-        int l = ctx->compresion_3[j];
-        int u = l + ctx->bound_contrassion_3[j];
-        int ta = ctx->compression_a[j];
-        int tb = ctx->compression_b[j];
-        if (ta < l || ta > u ) {
-                passes_a = false;
-                break;
         }
-        if (tb < l || tb > u) {
-                passes_b = false;
-               break;
+        if (! ctx->is_less_compression_a[ctx->coset_idx] && ! ctx->is_less_compression_b[ctx->coset_idx]) {
+            return false;
         }
-    }
-    
-
-    if (!passes_a && !passes_b) {
-        return false;
     }
 
     int dimension_candidate_pairs = (flag == 1) ? ctx->dimension_candidate_pairs1 : ctx->dimension_candidate_pairs2;
     size_t num_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
     int *compression = (flag == 1) ? ctx->compresion_1 : ctx->compresion_2;
     int *compression_bound = (flag == 1) ? ctx->bound_compression_1 : ctx->bound_compression_2;
-    uint64_t ***ge_main = (flag == 1) ? ctx->ge_bitsets1 : ctx->ge_bitsets2;
-    uint64_t ***le_main = (flag == 1) ? ctx->le_bitsets1 : ctx->le_bitsets2;
-    size_t words_len_main = (flag == 1) ? ctx->bitset_words1 : ctx->bitset_words2;
-    int max_value_main = (flag == 1) ? ctx->bitset_max_value1 : ctx->bitset_max_value2;
-    uint64_t *work_main = (flag == 1) ? ctx->bitset_work1 : ctx->bitset_work2;
-    int *order_buf_main = (flag == 1) ? ctx->bitset_order1 : ctx->bitset_order2;
-    int *score_buf_main = (flag == 1) ? ctx->bitset_score1 : ctx->bitset_score2;
-    PrefixRangeIndex *prefix_index_main = (flag == 1) ? &ctx->prefix_index1 : &ctx->prefix_index2;
+    int ** candidate_pairs = (flag == 1) ? ctx->candidate_pairs1 : ctx->candidate_pairs2;
+    bool ** is_less_cand = (flag == 1) ? ctx->is_less_candidates_1 : ctx->is_less_candidates_2;
+    bool exists = false;
+    for (int t = 0; t < selected_coset->len; t++) {
+        int elem = selected_coset->data[t];
+        int l = compression[elem % dimension_candidate_pairs];
+        int u = l + compression_bound[elem % dimension_candidate_pairs];
+        for (size_t j = 0; j < num_pairs; j++) {
+            int v = candidate_pairs[j][elem % dimension_candidate_pairs];
+            is_less_cand[ctx->coset_idx][j] = is_less_cand[ctx->coset_idx - 1][j] && (l <= v && v <= u);
+            exists = exists || is_less_cand[ctx->coset_idx][j];
+        }
 
-    return exists_candidate_in_range_bitset_precomputed(prefix_index_main,
-                                                        compression, compression_bound,
-                                                        (size_t)dimension_candidate_pairs,
-                                                        ge_main, le_main,
-                                                        words_len_main, num_pairs, max_value_main,
-                                                        work_main, order_buf_main, score_buf_main);
+    }
+    return exists;
 }
 
 
@@ -875,6 +889,7 @@ bool check_bound(DFSContext *ctx) {
     double max_lower_bound = 0.0;
     for (int j = 1; j < ctx->spectrum_size; j++) {
         double current_abs = cabs(ctx->current_dft[j]);
+        ctx->current_psd[j] = (int)rint(pow(current_abs, 2));
         double lower_bound_psd = pow(fmax(0.0, current_abs - ctx->current_bound[j]), 2.0);
         if (lower_bound_psd > max_lower_bound) {
             max_lower_bound = lower_bound_psd;
@@ -884,27 +899,24 @@ bool check_bound(DFSContext *ctx) {
 }
 
 bool is_valid_combination(const DFSContext *ctx) {
-    int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
+    //int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
 
-    int *temp= malloc(ctx->N * sizeof(int));
-    for (int j = 0; j < ctx->N; j++) {
-        temp[j] = vector_bits[j];
-    }
-    free(vector_bits);
-
-    bool result = true;
+    int *temp= ctx->current_sequence; //convert_to_binary_vector(vector_bits, ctx->N);
+    //free(vector_bits);
+    int temp_psd = -1;
+    bool result = false;
     if (is_compression_of_candidates(ctx,temp,0) && is_compression_of_candidates(ctx,temp,1))
     {
-        int max_psd = -1;
+        result = true;
         for (int j = 1; (j < ctx->spectrum_size) && result; j++) {
-            if ((int)rint(pow(cabs(ctx->current_dft[j]), 2)) > max_psd) {
-                max_psd = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
-            }
+            double real_part = creal(ctx->current_dft[j]);
+            double imag_part = cimag(ctx->current_dft[j]);
+            temp_psd = (int)(real_part * real_part + imag_part * imag_part);
+            ctx->current_psd[j] = temp_psd;
+            result = (temp_psd <= ctx->threshold);
         }
-        result = (max_psd <= (int)ctx->threshold);
+        
     }
-
-    free(temp);
     return result;
 }
 
@@ -922,29 +934,33 @@ void dfs_explore_combinations(DFSContext *ctx)
     if (ctx->coset_idx == ctx->cl->len || ctx->current_ones == ctx->target_ones) {
         if (is_valid_combination(ctx)) {
             ctx->matches_found++;
-            int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
             for (int j = 0; j < ctx->N; j++) {
-                fprintf(ctx->f_comb, "%u", vector_bits[j]);
+                fprintf(ctx->f_comb, "%u", ctx->current_sequence[j]);
             }
             fprintf(ctx->f_comb, "\n");
 
             // Recalcular DFT exacta desde la secuencia actual
-            double complex *time_domain_exact = malloc(ctx->N * sizeof(double complex));
-            binary_to_complex(ctx->current_sequence, time_domain_exact, ctx->N);
-            dft(time_domain_exact, ctx->current_dft, ctx->N);
-            free(time_domain_exact);
+            //double complex *time_domain_exact = malloc(ctx->N * sizeof(double complex));
+            //binary_to_complex(ctx->current_sequence, time_domain_exact, ctx->N);
+            //dft(time_domain_exact, ctx->current_dft, ctx->N);
+            //free(time_domain_exact);
+            for (int j = 1; j < ctx->spectrum_size; j++) {
+                int psd_val = ctx->current_psd[j];
+                int transformed = ctx->threshold - psd_val;
 
-            for (int j = 1; j < ctx->N; j++) {
-                int psd_val = (int)rint(pow(cabs(ctx->current_dft[j]), 2));
-                fwrite(&psd_val, sizeof(int), 1, ctx->f_psd);
-
-                int transformed = (int)rint(ctx->threshold - psd_val);
-                fwrite(&transformed, sizeof(int), 1, ctx->f_cte);
+                if (j > 1) {
+                    fprintf(ctx->f_psd, " ");
+                    fprintf(ctx->f_cte, " ");
+                }
+                fprintf(ctx->f_psd, "%d", psd_val);
+                fprintf(ctx->f_cte, "%d", transformed);
             }
+            fprintf(ctx->f_psd, "\n");
+            fprintf(ctx->f_cte, "\n");
             fflush(ctx->f_psd);
             fflush(ctx->f_cte);
-            find_matches_files(ctx->N, (size_t)(ctx->N - 1), ctx->psd_filename, ctx->cte_filename, ctx->lp_filename, ctx->comb_filename);
-            free(vector_bits);
+            //find_matches_files(ctx->N, (size_t)(ctx->N - 1), ctx->psd_filename, ctx->cte_filename, ctx->lp_filename, ctx->comb_filename);
+
         }
         return;
     }
@@ -971,6 +987,7 @@ void dfs_explore_combinations(DFSContext *ctx)
             }
 
             for (int j = 0; j < ctx->spectrum_size; j++) {
+                ctx->dft_backup[ctx->coset_idx][j] = ctx->current_dft[j];
                 ctx->current_dft[j] = ctx->current_dft[j] + ctx->dft_matrix[ctx->coset_idx][j];
             }
         }
@@ -1152,15 +1169,17 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
                                     const char *pairs_file1, const char *pairs_file2) {
     if (!cl || cl->len == 0) return;
 
-    double threshold = ((double)N + 1.0) / 2.0;
-    //int spectrum_size = (N  + 1)/2;
-    int spectrum_size = 20;
+    int threshold = (N+1)/2;
+    int spectrum_size = (N  + 1)/2;
+    //int spectrum_size = 20;
     double complex **dft_matrix = malloc(cl->len * sizeof(double complex *));
+    double complex **dft_backup = malloc(cl->len * sizeof(double complex *));
     int **psd_matrix = malloc(cl->len * sizeof(int *));
 
     for (int i = 0; i < cl->len; i++) {
         dft_matrix[i] = malloc(N * sizeof(double complex));
         psd_matrix[i] = malloc(N * sizeof(int));
+        dft_backup[i] = malloc(N * sizeof(double complex));
     }
 
     double complex *time_domain = malloc(N * sizeof(double complex));
@@ -1170,6 +1189,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     int *compression_b = malloc(p * sizeof(int));
     double complex *current_dft = calloc(N, sizeof(double complex));
     int *current_sequence = calloc((size_t)N, sizeof(int));
+    int *current_psd = calloc((size_t)N, sizeof(int));
     int *remaining_bits = calloc((size_t)N, sizeof(int));
     int *compresion_1 = NULL;
     int *compresion_2 = NULL;
@@ -1183,11 +1203,12 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     bool *is_less_compression_b = malloc((size_t)(cl->len + 1) * sizeof(bool));
     double *current_bound = malloc(N * sizeof(double));
 
-    if (!current_bound || !combination || !suffix_ones || !current_sequence || !remaining_bits ||
+    if (!current_bound || !combination || !suffix_ones || !current_sequence || !current_psd || !remaining_bits ||
         !is_less_compression_a || !is_less_compression_b) {
         printf("ERROR: No se pudo asignar memoria\n");
         free(current_dft);
         free(current_sequence);
+        free(current_psd);
         free(remaining_bits);
         free(combination);
         free(suffix_ones);
@@ -1200,9 +1221,11 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         for (int i = 0; i < cl->len; i++) {
             free(dft_matrix[i]);
             free(psd_matrix[i]);
+            free(dft_backup[i]);    
         }
         free(dft_matrix);
         free(psd_matrix);
+        free(dft_backup);
         return;
     }
 
@@ -1232,6 +1255,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
 
         for (int j = 0; j < N; j++) {
             dft_matrix[i][j] = freq_domain[j];
+            dft_backup[i][j] = 0.0 + 0.0 * I;
         }
         for (int j = 0; j < spectrum_size; j++) {
             psd_matrix[i][j] = (int)rint(pow(cabs(freq_domain[j]), 2));
@@ -1269,6 +1293,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     // Inicializar current_bound con la suma de valores absolutos de la DFT para cada frecuencia
     for (int j = 0; j < spectrum_size; j++) {
         current_bound[j] = 0.0;
+        current_psd[j] = 0;
         for (int i = 0; i < cl->len; i++) {
             current_bound[j] += cabs(dft_matrix[i][j]);
         }
@@ -1290,8 +1315,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     snprintf(lp_filename, sizeof(lp_filename), "%s/%s_%s_lp.txt", output_dir, pairs_name1, pairs_name2);
 
     FILE *f_comb = fopen(comb_filename, "w");
-    FILE *f_psd = fopen(psd_filename, "wb");
-    FILE *f_cte = fopen(cte_filename, "wb");
+    FILE *f_psd = fopen(psd_filename, "w");
+    FILE *f_cte = fopen(cte_filename, "w");
     size_t rows1, cols1;
     int **candidate1 = read_pairs_file(pairs_file1, &rows1, &cols1);
     size_t rows2, cols2;
@@ -1318,6 +1343,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     int *bitset_order2 = NULL;
     int *bitset_score1 = NULL;
     int *bitset_score2 = NULL;
+    bool **is_less_candidates_1 = NULL;
+    bool **is_less_candidates_2 = NULL;
     PrefixRangeIndex prefix_index1 = {0};
     PrefixRangeIndex prefix_index2 = {0};
     if (!f_comb || !f_psd || !f_cte || !candidate1 || !candidate2 ||
@@ -1416,6 +1443,53 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         return;
     }
 
+    is_less_candidates_1 = alloc_bool_matrix_true((size_t)(cl->len + 1), rows1);
+    is_less_candidates_2 = alloc_bool_matrix_true((size_t)(cl->len + 1), rows2);
+    if (!is_less_candidates_1 || !is_less_candidates_2) {
+        printf("ERROR: No se pudo asignar memoria para is_less_candidates_1/2.\n");
+        if (f_comb) fclose(f_comb);
+        if (f_psd) fclose(f_psd);
+        if (f_cte) fclose(f_cte);
+        if (candidate1) free_pairs(candidate1, rows1);
+        if (candidate2) free_pairs(candidate2, rows2);
+        free(current_bound);
+        for (int i = 0; i < cl->len; i++) {
+            free(dft_matrix[i]);
+            free(psd_matrix[i]);
+        }
+        free(dft_matrix);
+        free(psd_matrix);
+        free(current_dft);
+        free(current_sequence);
+        free(remaining_bits);
+        free(compresion_1);
+        free(compresion_2);
+        free(bound_compression_1);
+        free(bound_compression_2);
+        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
+        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
+        free(bitset_work1);
+        free(bitset_work2);
+        free(bitset_order1);
+        free(bitset_order2);
+        free(bitset_score1);
+        free(bitset_score2);
+        free_prefix_range_index(&prefix_index1);
+        free_prefix_range_index(&prefix_index2);
+        free(bound_psd);
+        free(combination);
+        free(suffix_ones);
+        free(is_less_compression_a);
+        free(is_less_compression_b);
+        free(compression_a);
+        free(compression_b);
+        free(compresion_3);
+        free(bound_contrassion_3);
+        free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
+        free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
+        return;
+    }
+
     if (!build_prefix_range_index((const int *const *)candidate1, rows1, cols1, max_value1, &prefix_index1) ||
         !build_prefix_range_index((const int *const *)candidate2, rows2, cols2, max_value2, &prefix_index2)) {
         printf("ADVERTENCIA: No se pudo construir prefiltro para primeras dimensiones; se usa chequeo completo.\n");
@@ -1465,6 +1539,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         free(suffix_ones);
         free(is_less_compression_a);
         free(is_less_compression_b);
+        free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
+        free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
         free(compression_a);
         free(compression_b);
         free(compresion_3);
@@ -1497,6 +1573,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .q = q,
         .num_cosets = cl->len,
         .dft_matrix = dft_matrix,
+        .dft_backup = dft_backup,
         .psd_matrix = psd_matrix,
         .current_dft = current_dft,
         .bound_psd = bound_psd,
@@ -1526,8 +1603,11 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .target_ones = (N + 1) / 2,
         .spectrum_size = spectrum_size,
         .suffix_ones = suffix_ones,
+        .current_psd = current_psd,
         .is_less_compression_a = is_less_compression_a,
         .is_less_compression_b = is_less_compression_b,
+        .is_less_candidates_1 = is_less_candidates_1,
+        .is_less_candidates_2 = is_less_candidates_2,
         .ge_bitsets1 = ge_bitsets1,
         .le_bitsets1 = le_bitsets1,
         .bitset_words1 = bitset_words1,
@@ -1586,6 +1666,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         free(suffix_ones);
         free(is_less_compression_a);
         free(is_less_compression_b);
+        free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
+        free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
         free(compression_a);
         free(compression_b);
         free(compresion_3);
@@ -1600,7 +1682,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     }
 
     printf("\n=== EXPLORACIÓN DFS (N=%d, cosets=%d) ===\n", N, cl->len);
-    printf("Condicion: Max(PSD) < %.2f\n\n", threshold);
+    printf("Condicion: Max(PSD) < %d\n\n", threshold);
 
     /* Asegurar que combination empieza vacío antes de DFS */
     for (int i = 0; i < cl->len; i++) combination[i] = -1;
@@ -1614,6 +1696,7 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     for (int i = 0; i < cl->len; i++) {
         free(dft_matrix[i]);
         free(psd_matrix[i]);
+        free(dft_backup[i]);
     }
     free(dft_matrix);
     free(psd_matrix);
@@ -1639,6 +1722,8 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     free(suffix_ones);
     free(is_less_compression_a);
     free(is_less_compression_b);
+    free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
+    free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
     free(compression_a);
     free(compression_b);
     free(compresion_3);
