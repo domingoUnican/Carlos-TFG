@@ -35,3 +35,29 @@ one: $(BIN_ONE)
 
 clean:
 	rm -rf $(BUILD)
+
+# ==============================================================================
+# AUTOMATIZACIÓN DE TIEMPOS PARA LA MEMORIA LATEX (Usando /usr/bin/time)
+# ==============================================================================
+TEX_DIR := ..
+TEX_FILE := $(TEX_DIR)/tiempos_ejecucion.tex
+
+.PHONY: tiempos
+
+tiempos: $(BIN_TEXT) $(BIN_ONE) $(BIN)
+	@echo "Ejecutando pruebas y exportando tiempos a LaTeX..."
+	@echo "% Archivo generado automaticamente por 'make tiempos'. NO EDITAR." > $(TEX_FILE)
+	
+	@echo "Midiendo tiempos de app_text (fuerza bruta)..."
+	@T_TEXT=$$(/usr/bin/time -f "%e" ./$(BIN_TEXT) 2>&1 1>/dev/null); \
+	printf "\\\\newcommand{\\\\tiempoAppText}{%s}\n" "$$T_TEXT" >> $(TEX_FILE)
+	
+	@echo "Midiendo tiempos de app_one (DFS básico)..."
+	@T_ONE=$$(/usr/bin/time -f "%e" ./$(BIN_ONE) Tests/75/25.txt Tests/75/15.txt 3 5 2>&1 1>/dev/null); \
+	printf "\\\\newcommand{\\\\tiempoAppOne}{%s}\n" "$$T_ONE" >> $(TEX_FILE)
+	
+	@echo "Midiendo tiempos de app (DFS Bitsets optimizado)..."
+	@T_BIN=$$(/usr/bin/time -f "%e" ./$(BIN) Tests/75/25.txt Tests/75/15.txt 3 5 2>&1 1>/dev/null); \
+	printf "\\\\newcommand{\\\\tiempoAppOpt}{%s}\n" "$$T_BIN" >> $(TEX_FILE)
+	
+	@echo "¡Tiempos actualizados con éxito en $(TEX_FILE)!"

@@ -1,3 +1,4 @@
+#define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,7 +19,7 @@ const char *PATH_CTEDFT     = "cte-dft.txt";                   // Constante - DF
 
 const char *PATH_LP    = "lp.txt";                             // LPS
 
-static void print_bits(const uint8_t *v, size_t n, const char *name) {
+void print_bits_oculta(const uint8_t *v, size_t n, const char *name) {
     printf("%s = [", name);
     for (size_t i = 0; i < n; ++i) {
         printf("%u", (unsigned)v[i]);
@@ -27,7 +28,7 @@ static void print_bits(const uint8_t *v, size_t n, const char *name) {
     printf("]\n");
 }
 
-static void print_vector(const uint8_t *v, size_t n) {
+void print_vector_oculta(const uint8_t *v, size_t n) {
     printf("[");
     for (size_t i = 0; i < n; i++) {
         printf("%u", (unsigned)v[i]);
@@ -50,7 +51,7 @@ typedef struct {
 
 
 /* Genera vector completo para una combinación dada de cosets */
-uint8_t* generate_vector_for_combination(const CosetList *cl, 
+uint8_t* generate_vector_for_combination_txt(const CosetList *cl, 
                                         const uint8_t *combination, 
                                         size_t N) {
     uint8_t *vector = (uint8_t*)calloc(N, sizeof(uint8_t));
@@ -139,7 +140,7 @@ CosetVectors* generate_coset_vectors(const CosetList *cl, size_t N) {
         }
         
         // 2. Generar vector completo para esta combinación
-        result->vectors[i] = generate_vector_for_combination(cl, result->combinations[i], N);
+        result->vectors[i] = generate_vector_for_combination_txt(cl, result->combinations[i], N);
         if (!result->vectors[i]) {
             fprintf(stderr, "ERROR: sin memoria para vector %zu\n", i);
             goto error_cleanup;
@@ -266,7 +267,7 @@ int save_vectors(const CosetVectors *cv, const char *filename) {
 }
 
 /* Convierte vector binario a complejo (-1/+1) */
-static void binary_to_complex(const uint8_t *binary, double complex *complex_arr, size_t N) {
+static void binary_to_complex_txt(const uint8_t *binary, double complex *complex_arr, size_t N) {
     for (size_t i = 0; i < N; i++) {
         complex_arr[i] = (binary[i] == 0) ? 1.0 + 0.0*I : 0 + 0.0*I;
     }
@@ -308,7 +309,7 @@ int save_dft_both(const CosetVectors *cv, const char *filename1,  const char *fi
     
     for (size_t i = 0; i < cv->num_vectors; i++) {
         
-        binary_to_complex(cv->vectors[i], time_domain, N);
+        binary_to_complex_txt(cv->vectors[i], time_domain, N);
         dft(time_domain, freq_domain, N);
         
         
