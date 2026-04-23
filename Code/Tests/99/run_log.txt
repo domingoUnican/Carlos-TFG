@@ -1,0 +1,370 @@
+N=99, p=11, q=3
+k=2 tiene 8 cosets
+N=99 k=2
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=29 tiene 8 cosets
+N=99 k=29
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=41 tiene 8 cosets
+N=99 k=41
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=50 tiene 8 cosets
+N=99 k=50
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=68 tiene 8 cosets
+N=99 k=68
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=74 tiene 8 cosets
+N=99 k=74
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=83 tiene 8 cosets
+N=99 k=83
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=95 tiene 8 cosets
+N=99 k=95
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=8) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=5 tiene 9 cosets
+N=99 k=5
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=14 tiene 9 cosets
+N=99 k=14
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=20 tiene 9 cosets
+N=99 k=20
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=38 tiene 9 cosets
+N=99 k=38
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=47 tiene 9 cosets
+N=99 k=47
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=59 tiene 9 cosets
+N=99 k=59
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=86 tiene 9 cosets
+N=99 k=86
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=92 tiene 9 cosets
+N=99 k=92
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=9) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=7 tiene 10 cosets
+N=99 k=7
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=13 tiene 10 cosets
+N=99 k=13
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=40 tiene 10 cosets
+N=99 k=40
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=52 tiene 10 cosets
+N=99 k=52
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=61 tiene 10 cosets
+N=99 k=61
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=79 tiene 10 cosets
+N=99 k=79
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=85 tiene 10 cosets
+N=99 k=85
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=94 tiene 10 cosets
+N=99 k=94
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=10) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=8 tiene 14 cosets
+N=99 k=8
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=14) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=17 tiene 14 cosets
+N=99 k=17
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=14) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=35 tiene 14 cosets
+N=99 k=35
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=14) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=62 tiene 14 cosets
+N=99 k=62
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 columnas
+
+=== EXPLORACIÓN DFS (N=99, cosets=14) ===
+Condicion: Max(PSD) < 50
+
+
+=== EXPLORACIÓN FINALIZADA ===
+Vectores encontrados: 0
+
+k=4 tiene 15 cosets
+N=99 k=4
+
+Archivo '33.txt' leído exitosamente: 139187 filas x 33 columnas
+Archivo '9.txt' leído exitosamente: 313209 filas x 9 col
