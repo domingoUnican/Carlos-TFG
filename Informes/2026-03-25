@@ -1,0 +1,7 @@
+
+
+- Hacer diagrama de clases del código.
+- Preparar el makefile para que cuando hagamos make run ejecute el programa, tome tiempos y compile la memoria con los nuevos tiempos (https://missing.csail.mit.edu/2020/metaprogramming/)
+- HAcer la parte de ingeniería de software (mencionar la metodología de cascada y JUSTIFICAR porque lo hacemos, herramientas de software openmp diciendo que otras herramientas has considerado y porque las has desechado contra esta).
+
+- Domingo pregunta a Illias para ver como hizo para sacar la Legendre Pair en 7 dias.
