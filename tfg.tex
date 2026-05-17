@@ -119,14 +119,14 @@ El estudio de secuencias con autocorrelación ideal tiene sus raíces en los pro
 Históricamente, la investigación se centró en encontrar secuencias únicas (como las secuencias de Barker), pero la demostración de su inexistencia para longitudes impares mayores que 13 motivó la búsqueda de \emph{pares} de secuencias complementarias. Investigadores como \cite{seberry1992hadamard} formalizaron la conexión entre estos pares y las Matrices de Hadamard, un problema abierto desde hace más de un siglo.
 
 Recientemente, el trabajo de  \cite{kotsireas2021legendre} revitalizó el campo aplicando optimización computacional para longitudes $\ell$ divisibles por 3. Este TFG toma el relevo de dichos trabajos, proponiendo una modernización de las herramientas de búsqueda mediante paralelismo masivo y generación automática de código.
-\end{document}
+
 \section{Aplicaciones y logros de los pares de Legendre}
 
 La relevancia de estas secuencias trasciende la teoría matemática pura; poseen aplicaciones prácticas directas en ingeniería moderna.
 
 \subsection{Sistemas de radar y sonar}
 En el diseño de ondas para radar, el objetivo fundamental es lograr una Función de Ambigüedad que se aproxime a un impulso ideal. La capacidad de discernir el eco de un objetivo frente al ruido depende de la Función de Autocorrelación Periódica (PAF) de la señal emitida.
-
+\end{document}
 Si transmitimos una secuencia $S$, buscamos que el lóbulo principal en el retardo $\tau = 0$ contenga toda la energía, y que los lóbulos laterales (\emph{sidelobes}) sean nulos para evitar objetivos fantasma. Los pares de Legendre son valiosos porque, al transmitirse en esquemas ortogonales complementarios, la suma de sus interferencias se cancela casi perfectamente:
 $$ \text{PAF}_A(\tau) + \text{PAF}_B(\tau) = \begin{cases} 2\ell, & \tau \equiv 0 \pmod \ell \\ -2, & \tau \not\equiv 0 \pmod \ell \end{cases} $$
 Esta propiedad de autocorrelación casi impulsiva maximiza la Relación Señal a Ruido (SNR), mejorando radicalmente la resolución espacial del radar y mitigando las interferencias de trayectos múltiples (\emph{multipath fading}) \cite{budivsin1991efficient}.
