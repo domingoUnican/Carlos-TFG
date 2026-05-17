@@ -119,7 +119,7 @@ El estudio de secuencias con autocorrelación ideal tiene sus raíces en los pro
 Históricamente, la investigación se centró en encontrar secuencias únicas (como las secuencias de Barker), pero la demostración de su inexistencia para longitudes impares mayores que 13 motivó la búsqueda de \emph{pares} de secuencias complementarias. Investigadores como \cite{seberry1992hadamard} formalizaron la conexión entre estos pares y las Matrices de Hadamard, un problema abierto desde hace más de un siglo.
 
 Recientemente, el trabajo de  \cite{kotsireas2021legendre} revitalizó el campo aplicando optimización computacional para longitudes $\ell$ divisibles por 3. Este TFG toma el relevo de dichos trabajos, proponiendo una modernización de las herramientas de búsqueda mediante paralelismo masivo y generación automática de código.
-
+\end{document}
 \section{Aplicaciones y logros de los pares de Legendre}
 
 La relevancia de estas secuencias trasciende la teoría matemática pura; poseen aplicaciones prácticas directas en ingeniería moderna.
@@ -251,7 +251,7 @@ La resolución de un espacio de dimensionalidad exponencial no puede abordarse m
 A continuación, se documentará la evolución iterativa del motor de búsqueda. Se analizará el fracaso de las implementaciones primigenias, cuyo rendimiento se veía asfixiado por los severos cuellos de botella de entrada y salida (I/O) en el disco físico, y se justificará la transición hacia un modelo dinámico de Búsqueda en Profundidad (DFS) ejecutado íntegramente en la memoria principal. En este punto, se detallará cómo la inyección de heurísticas de poda matemática y el rediseño de las estructuras de datos para aprovechar operaciones a nivel de bit (paralelismo SWAR intra-registro) permitieron al software descartar billones de ramas estériles sin la necesidad de evaluarlas computacionalmente.
 
 Aun con estas mejoras, la optimización algorítmica clásica posee un límite asintótico inquebrantable frente a la explosión combinatoria. Por ello, la segunda mitad del capítulo se adentra en el cambio de paradigma hacia la computación distribuida y la persistencia de datos probabilística. Se expondrá la integración de Filtros de Bloom para orquestar una estrategia \emph{Meet-in-the-Middle} capaz de alterar la complejidad temporal del problema aislando sus subespacios, logrando contener el colapso teórico de la memoria RAM. 
->>>>>>> origin/overleaf-2026-05-17-1603
+
 
 Finalmente, se coronará el desarrollo detallando la arquitectura de metaprogramación: la creación de un sistema matriz capaz de transcribir su propio código fuente en C++, desenrollando bucles y eliminando la latencia de las ramificaciones condicionales para acoplarse de forma nativa a las instrucciones vectoriales del procesador anfitrión. Este recorrido ilustra, paso a paso, la metamorfosis de un problema analítico de matemáticas discretas en un desafío integral de ingeniería de software, arquitecturas superescalares y orquestación de clústers de supercomputación.
 
@@ -479,7 +479,7 @@ El generador es una aplicación en C++ que no busca pares de Legendre directamen
 
 \begin{figure}[H]
     \centering
-    \begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Flujo de Metaprogramación]
+    %\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Flujo de Metaprogramación]
     \centering
     \textbf{1. Input:} $\ell=75$. \\
     $\downarrow$ \\
