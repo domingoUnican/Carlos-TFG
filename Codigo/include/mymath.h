@@ -52,7 +52,7 @@ void vec_mat(const double *x, const double *A, double *y, size_t m, size_t n);
 
 void print_bits(const uint8_t *v, size_t n, const char *name);
 void print_vector(const uint8_t *v, size_t n);
-void legendre_sequence(int p, int q, int *sequence, int flag);
+void legendre_sequence(int p, int q, int *sequence);
 int lex_cmp(const int *a, const int *b, size_t dim);
 int binary_search_sorted_pairs(int **sorted_list, size_t num_rows,
                                       size_t dim, const int *key, int flag);

@@ -70,11 +70,12 @@ void print_vector(const uint8_t *v, size_t n) {
     printf("]");
 }
 
-void legendre_sequence(int p, int q, int *sequence, int flag)
+void legendre_sequence(int p, int q, int *sequence)
 {
     sequence[0] = (q*q + 1) >> 1; // esto es dividir por 2, pero usando bit shift para enteros
+    sequence[p] = (q*q + 1) >> 1;
     for (int n = 1; n < p; n++) {
-        int legendre_symbol = flag;
+        int legendre_symbol = 1;
         for (int k = 1; k <= (p - 1) / 2; k++) {
             if ((n % p) == (k * k % p)) {
                 legendre_symbol = -legendre_symbol; // cambiar el signo
@@ -82,6 +83,7 @@ void legendre_sequence(int p, int q, int *sequence, int flag)
             }
         }
         sequence[n] = (q*q + legendre_symbol * q) >> 1;
+        sequence[n + p] = (q*q - legendre_symbol * q) >> 1;
     }
 }
 

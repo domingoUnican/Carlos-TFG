@@ -9,111 +9,13 @@
 #include "pairs_reader.h"
 #include "cyclotomic_cosets.h"
 #define ALFABET_SIZE 2
-#define DEPTH 22
-#define DIMENSIONS 6
-// ...existing code...
-
-void show_specific_lines(size_t line1, size_t line2, FILE *lp_file, size_t N, const char *path_combinations) {
-    FILE *file = fopen(path_combinations, "r");
-    if (!file) {
-        printf("ERROR: No se pudo abrir '%s'\n", path_combinations);
-        return;
-    }
-
-    char *line = malloc(N + 8);
-    if (!line) { fclose(file); return; }
-
-    size_t line_idx = 0;
-    bool got_line1 = false;
-    bool got_line2 = false;
-    while (fgets(line, (int)(N + 8), file) != NULL) {
-        if (line_idx == line1 || line_idx == line2) {
-            size_t len = strlen(line);
-            while (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r')) {
-                line[--len] = '\0';
-            }
-            fprintf(lp_file, "%s\n", line);
-            if (line_idx == line1) got_line1 = true;
-            if (line_idx == line2) got_line2 = true;
-            if (got_line1 && got_line2) {
-                break;
-            }
-        }
-        line_idx++;
-    }
-    fprintf(lp_file, "\n");
-
-    free(line);
-    fclose(file);
-}
+#define DEPTH 0
+#define DIMENSIONS 3
+#ifndef USE_CHECK_BOUND
+#define USE_CHECK_BOUND 1
+#endif
 
 
-void find_matches_files(size_t N, size_t row_ints, char* path_psd, char* path_cte, char* path_lp, char* path_comb) {
-    FILE *f1 = fopen(path_psd, "rb");
-    FILE *f2 = fopen(path_cte, "rb");
-    FILE *lp_file = fopen(path_lp, "a"); // acumulamos los LP encontrados en cada llamada
-    
-    if (!f1 || !f2 || !lp_file) {
-        if (f1) fclose(f1); if (f2) fclose(f2);
-        return;
-    }
-
-    size_t L_dft = row_ints; // Cantidad de enteros por bloque binario
-    size_t block_size = L_dft * sizeof(int);
-    // 1. Cargar fichero 2 en memoria para evitar accesos a disco
-    size_t capacity = 1000;
-    size_t total_lines2 = 0;
-
-    int *all_lines2 = malloc(capacity * block_size);
-
-    int *temp_buffer = malloc(block_size);
-
-    while (fread(temp_buffer, sizeof(int), L_dft, f2) == L_dft) {
-        if (total_lines2 >= capacity) {
-            capacity *= 2;
-            all_lines2 = realloc(all_lines2, capacity * block_size);
-        }
-        // Copiamos el bloque al gran buffer de memoria
-        memcpy(&all_lines2[total_lines2 * L_dft], temp_buffer, block_size);
-        total_lines2++;
-    }
-
-    printf("Searching for LPS...\n");
-    bool LP_found = false; // flag para parar si encuentra el primer LP
-    int *line1_data = malloc(block_size);
-    size_t line1_num = 0;
-
-    // 2. Leer F1 bloque a bloque y comparar contra todo F2 en memoria
-    rewind(f1);
-    while (!LP_found && fread(line1_data, sizeof(int), L_dft, f1) == L_dft) {
-        
-        size_t j = 0;
-        while (j < total_lines2 && !LP_found) {
-            
-            // Condición: i < j para evitar duplicados y simetrías
-            if (line1_num < j) {
-                // Comparamos el bloque actual de f1 con el bloque j en RAM de f2
-                if (memcmp(line1_data, &all_lines2[j * L_dft], block_size) == 0) {
-                    
-                    // Si coinciden los espectros, es un Legendre Pair
-                    show_specific_lines(line1_num, j, lp_file, N, path_comb);
-                    
-                    printf("LEGENDRE PAIR! Indices: %zu y %zu\n", line1_num, j);
-                    LP_found = true; 
-                    // El !LP_found en la condición del while romperá el bucle j automáticamente
-                }
-            }
-            j++;
-        }
-        line1_num++;
-    }
-
-    // Limpieza
-    free(all_lines2);
-    free(temp_buffer);
-    free(line1_data);
-    fclose(f1); fclose(f2); fclose(lp_file);
-}
 
 int gcd(int a, int b) {
     a = abs(a);
@@ -158,16 +60,6 @@ static void path_dirname(const char *path, char *out, size_t out_size) {
 
 
 
-
-typedef struct {
-    int dims_used;
-    int max_value;
-    size_t axis_len;
-    size_t total_cells;
-    size_t strides[DIMENSIONS];
-    uint32_t *prefix;
-} PrefixRangeIndex;
-
 typedef struct {
     FILE *f_comb;
     FILE *f_psd;
@@ -181,7 +73,6 @@ typedef struct {
     //double constant; constant is the same as threshold.
     double complex **dft_matrix;
     double complex **dft_backup;
-    int **psd_matrix;
     int N;
     int num_cosets;
     double complex *current_dft;
@@ -189,19 +80,19 @@ typedef struct {
     int *current_sequence;
     int *current_psd; 
     int *remaining_bits;
-    int *compresion_1;
-    int *compresion_2;
+    int *compression_1;
+    int *compression_2;
     int *bound_compression_1;
     int *bound_compression_2;
-    int *compresion_3;
-    int *bound_contrassion_3;
+    int *compression_3;
+    int *bound_compression_3;
     int *compression_a;
-    int *compression_b;
     int p;
     int q;
     int coset_idx;
     CosetList *cl;
-    int *current_combination;
+    int *current_combination1;
+    int *current_combination2;
     int **candidate_pairs1;
     size_t num_candidate_pairs1;
     size_t dimension_candidate_pairs1;
@@ -210,226 +101,34 @@ typedef struct {
     double **depth_exploration_bound;
     size_t num_candidate_pairs2;
     size_t dimension_candidate_pairs2;
-    int pos_depth;
-    int current_ones;
+    int pos_depth_1;
+    int pos_depth_2;
+    int current_ones1;
+    int current_ones2;
     int target_ones;
     int spectrum_size;
-    int *suffix_ones;
+    int *suffix_ones1;
+    int *suffix_ones2;
     bool *is_less_compression_a;
     bool *is_less_compression_b;
     bool **is_less_candidates_1;
     bool **is_less_candidates_2;
-    uint64_t ***ge_bitsets1;
-    uint64_t ***le_bitsets1;
-    size_t bitset_words1;
-    int bitset_max_value1;
-    uint64_t *bitset_work1;
-    int *bitset_order1;
-    int *bitset_score1;
-    uint64_t ***ge_bitsets2;
-    uint64_t ***le_bitsets2;
-    size_t bitset_words2;
-    int bitset_max_value2;
-    uint64_t *bitset_work2;
-    int *bitset_order2;
-    int *bitset_score2;
-    PrefixRangeIndex prefix_index1;
-    PrefixRangeIndex prefix_index2;
 } DFSContext;
 
-static void free_candidate_bitsets(uint64_t ***ge, uint64_t ***le, size_t dim, int max_value) {
-    if (ge) {
-        for (size_t j = 0; j < dim; j++) {
-            if (ge[j]) {
-                for (int v = 0; v <= max_value; v++) {
-                    free(ge[j][v]);
-                }
-                free(ge[j]);
-            }
-        }
-        free(ge);
-    }
-    if (le) {
-        for (size_t j = 0; j < dim; j++) {
-            if (le[j]) {
-                for (int v = 0; v <= max_value; v++) {
-                    free(le[j][v]);
-                }
-                free(le[j]);
-            }
-        }
-        free(le);
-    }
+static int compare_int_asc(const void *a, const void *b) {
+    int ia = *(const int *)a;
+    int ib = *(const int *)b;
+    return (ia > ib) - (ia < ib);
 }
 
-static bool build_candidate_bitsets(int **pairs, size_t num_pairs, size_t dim, int max_value,
-                                    uint64_t ****ge_out, uint64_t ****le_out, size_t *words_len_out) {
-    if (!pairs || dim == 0 || !ge_out || !le_out || !words_len_out || max_value < 0) {
-        return false;
-    }
-
-    size_t words_len = (num_pairs + 63u) / 64u;
-    if (words_len == 0) {
-        words_len = 1;
-    }
-
-    uint64_t ***ge = calloc(dim, sizeof(uint64_t **));
-    uint64_t ***le = calloc(dim, sizeof(uint64_t **));
-    if (!ge || !le) {
-        free(ge);
-        free(le);
-        return false;
-    }
-
-    for (size_t j = 0; j < dim; j++) {
-        ge[j] = calloc((size_t)max_value + 1u, sizeof(uint64_t *));
-        le[j] = calloc((size_t)max_value + 1u, sizeof(uint64_t *));
-        if (!ge[j] || !le[j]) {
-            free_candidate_bitsets(ge, le, dim, max_value);
-            return false;
-        }
-        for (int v = 0; v <= max_value; v++) {
-            ge[j][v] = calloc(words_len, sizeof(uint64_t));
-            le[j][v] = calloc(words_len, sizeof(uint64_t));
-            if (!ge[j][v] || !le[j][v]) {
-                free_candidate_bitsets(ge, le, dim, max_value);
-                return false;
-            }
-        }
-    }
-
-    for (size_t i = 0; i < num_pairs; i++) {
-        size_t word = i >> 6;
-        uint64_t bit = 1ULL << (i & 63u);
-        for (size_t j = 0; j < dim; j++) {
-            int value = pairs[i][j];
-            if (value < 0) value = 0;
-            if (value > max_value) value = max_value;
-
-            for (int l = 0; l <= value; l++) {
-                ge[j][l][word] |= bit;
-            }
-            for (int u = value; u <= max_value; u++) {
-                le[j][u][word] |= bit;
-            }
-        }
-    }
-
-    *ge_out = ge;
-    *le_out = le;
-    *words_len_out = words_len;
-    return true;
-}
-
-static bool exists_candidate_in_range_bitset(const int *compression, const int *compression_bound,
-                                               size_t dim,
-                                               uint64_t ***ge, uint64_t ***le,
-                                               size_t words_len, size_t num_pairs, int max_value,
-                                               uint64_t *work,
-                                               int *order_buf,
-                                               int *score_buf) {
-    if (!compression || !compression_bound || !ge || !le || !work || !order_buf || !score_buf) {
-        return false;
-    }
-    if (num_pairs == 0) {
-        return false;
-    }
-
-    for (size_t w = 0; w < words_len; w++) {
-        work[w] = ~0ULL;
-    }
-    size_t last_word = (num_pairs - 1u) >> 6;
-    size_t used_bits = ((num_pairs - 1u) & 63u) + 1u;
-    if (used_bits < 64u) {
-        uint64_t tail_mask = (1ULL << used_bits) - 1ULL;
-        work[last_word] &= tail_mask;
-    }
-
-    for (size_t j = 0; j < dim; j++) {
-        int l = compression[j];
-        int u = compression[j] + compression_bound[j];
-
-        if (u < 0 || l > max_value) {
-            return false;
-        }
-        if (l < 0) l = 0;
-        if (u > max_value) u = max_value;
-        if (l > u) {
-            return false;
-        }
-
-        int count = 0;
-        for (size_t w = 0; w <= last_word; w++) {
-            uint64_t bits = ge[j][l][w] & le[j][u][w];
-            count += __builtin_popcountll((unsigned long long)bits);
-        }
-        if (count == 0) {
-            return false;
-        }
-
-        order_buf[j] = (int)j;
-        score_buf[j] = count;
-    }
-
-    for (size_t i = 1; i < dim; i++) {
-        int key_order = order_buf[i];
-        int key_score = score_buf[i];
-        size_t p = i;
-        while (p > 0 && score_buf[p - 1] > key_score) {
-            score_buf[p] = score_buf[p - 1];
-            order_buf[p] = order_buf[p - 1];
-            p--;
-        }
-        score_buf[p] = key_score;
-        order_buf[p] = key_order;
-    }
-
-    for (size_t s = 0; s < dim; s++) {
-        int j = order_buf[s];
-        int l = compression[j];
-        int u = compression[j] + compression_bound[j];
-        if (l < 0) l = 0;
-        if (u > max_value) u = max_value;
-
-        bool any = false;
-        for (size_t w = 0; w <= last_word; w++) {
-            work[w] &= ge[j][l][w] & le[j][u][w];
-            if (work[w] != 0ULL) {
-                any = true;
-            }
-        }
-        if (!any) {
-            return false;
-        }
-    }
-    return true;
-}
-
-static void free_prefix_range_index(PrefixRangeIndex *index) {
-    if (!index) return;
-    free(index->prefix);
-    index->prefix = NULL;
-    index->dims_used = 0;
-    index->max_value = 0;
-    index->axis_len = 0;
-    index->total_cells = 0;
-    for (int i = 0; i < DIMENSIONS; i++) {
-        index->strides[i] = 0;
-    }
-}
-
-static bool **alloc_bool_matrix_true(size_t rows, size_t cols) {
+static bool **allocate_bool_matrix(size_t rows, size_t cols) {
     bool **matrix = malloc(rows * sizeof(bool *));
-    if (!matrix) {
-        return NULL;
-    }
+    if (!matrix) return NULL;
 
     for (size_t i = 0; i < rows; i++) {
         matrix[i] = malloc(cols * sizeof(bool));
         if (!matrix[i]) {
-            for (size_t k = 0; k < i; k++) {
-                free(matrix[k]);
-            }
+            for (size_t j = 0; j < i; j++) free(matrix[j]);
             free(matrix);
             return NULL;
         }
@@ -437,7 +136,6 @@ static bool **alloc_bool_matrix_true(size_t rows, size_t cols) {
             matrix[i][j] = true;
         }
     }
-
     return matrix;
 }
 
@@ -449,178 +147,8 @@ static void free_bool_matrix(bool **matrix, size_t rows) {
     free(matrix);
 }
 
-static bool build_prefix_range_index(const int *const *pairs, size_t num_pairs,
-                                     size_t dim, int max_value,
-                                     PrefixRangeIndex *out) {
-    if (!out) return false;
-
-    out->dims_used = 0;
-    out->max_value = 0;
-    out->axis_len = 0;
-    out->total_cells = 0;
-    out->prefix = NULL;
-    for (int i = 0; i < DIMENSIONS; i++) {
-        out->strides[i] = 0;
-    }
-
-    if (!pairs || dim == 0 || max_value < 0) {
-        fprintf(stderr, "DEBUG: build_prefix_range_index falló: pairs=%p, dim=%zu, max_value=%d\n", 
-                (void*)pairs, dim, max_value);
-        return false;
-    }
-
-    int dims_used = (int)dim;
-    if (dims_used > DIMENSIONS) {
-        dims_used = DIMENSIONS;
-    }
-    if (dims_used <= 0) {
-        fprintf(stderr, "DEBUG: dims_used=%d es inválido\n", dims_used);
-        return false;
-    }
-
-    size_t axis_len = (size_t)max_value + 1u;
-    size_t total_cells = 1u;
-    const size_t max_cells = 20000000u;
-    for (int d = 0; d < dims_used; d++) {
-        if (axis_len != 0 && total_cells > SIZE_MAX / axis_len) {
-            fprintf(stderr, "DEBUG: overflow en stride computation (d=%d, axis_len=%zu, total_cells=%zu)\n",
-                    d, axis_len, total_cells);
-            return false;
-        }
-        total_cells *= axis_len;
-        if (total_cells > max_cells) {
-            fprintf(stderr, "DEBUG: total_cells=%zu excede max_cells=%zu (dims_used=%d, axis_len=%zu, max_value=%d)\n",
-                    total_cells, max_cells, dims_used, axis_len, max_value);
-            return false;
-        }
-    }
-
-    uint32_t *grid = calloc(total_cells, sizeof(uint32_t));
-    if (!grid) {
-        fprintf(stderr, "DEBUG: malloc falló para total_cells=%zu\n", total_cells);
-        return false;
-    }
-
-    out->strides[0] = 1u;
-    for (int d = 1; d < dims_used; d++) {
-        out->strides[d] = out->strides[d - 1] * axis_len;
-    }
-
-    for (size_t i = 0; i < num_pairs; i++) {
-        size_t idx = 0u;
-        for (int d = 0; d < dims_used; d++) {
-            int value = pairs[i][d];
-            if (value < 0) value = 0;
-            if (value > max_value) value = max_value;
-            idx += (size_t)value * out->strides[d];
-        }
-        grid[idx] += 1u;
-    }
-
-    for (int d = 0; d < dims_used; d++) {
-        size_t step = out->strides[d];
-        size_t block = step * axis_len;
-        for (size_t base = 0; base < total_cells; base += block) {
-            for (size_t off = 0; off < step; off++) {
-                uint32_t running = 0u;
-                for (size_t pos = 0; pos < axis_len; pos++) {
-                    size_t idx = base + off + pos * step;
-                    running += grid[idx];
-                    grid[idx] = running;
-                }
-            }
-        }
-    }
-
-    out->dims_used = dims_used;
-    out->max_value = max_value;
-    out->axis_len = axis_len;
-    out->total_cells = total_cells;
-    out->prefix = grid;
-    return true;
-}
-
-static bool exists_candidate_in_prefix_range(const PrefixRangeIndex *index,
-                                             const int *compression,
-                                             const int *compression_bound) {
-    if (!index || !index->prefix || !compression || !compression_bound || index->dims_used <= 0) {
-        return true;
-    }
-
-    int lo[DIMENSIONS];
-    int hi[DIMENSIONS];
-    for (int d = 0; d < index->dims_used; d++) {
-        int l = compression[d];
-        int u = compression[d] + compression_bound[d];
-        if (u < 0 || l > index->max_value) {
-            return false;
-        }
-        if (l < 0) l = 0;
-        if (u > index->max_value) u = index->max_value;
-        if (l > u) {
-            return false;
-        }
-        lo[d] = l;
-        hi[d] = u;
-    }
-
-    long long count = 0;
-    int masks = 1 << index->dims_used;
-    for (int mask = 0; mask < masks; mask++) {
-        size_t idx = 0u;
-        bool valid = true;
-        for (int d = 0; d < index->dims_used; d++) {
-            int coord = (mask & (1 << d)) ? (lo[d] - 1) : hi[d];
-            if (coord < 0) {
-                valid = false;
-                break;
-            }
-            idx += (size_t)coord * index->strides[d];
-        }
-        if (!valid) {
-            continue;
-        }
-
-        long long term = (long long)index->prefix[idx];
-        if (__builtin_popcount((unsigned int)mask) & 1) {
-            count -= term;
-        } else {
-            count += term;
-        }
-    }
-
-    return count > 0;
-}
-
-static bool exists_candidate_in_range_bitset_precomputed(const PrefixRangeIndex *prefix_index,
-                                                         const int *compression,
-                                                         const int *compression_bound,
-                                                         size_t dim,
-                                                         uint64_t ***ge, uint64_t ***le,
-                                                         size_t words_len, size_t num_pairs, int max_value,
-                                                         uint64_t *work,
-                                                         int *order_buf,
-                                                         int *score_buf) {
-    if (!exists_candidate_in_prefix_range(prefix_index, compression, compression_bound)){
-       return false;
-    }
-
-    return exists_candidate_in_range_bitset(compression, compression_bound,
-                                            dim,
-                                            ge, le,
-                                            words_len, num_pairs, max_value,
-                                            work,
-                                            order_buf,
-                                            score_buf);
-}
-
-static int compare_int_asc(const void *a, const void *b) {
-    int ia = *(const int *)a;
-    int ib = *(const int *)b;
-    return (ia > ib) - (ia < ib);
-}
-
 void reorder_cosets_by_candidate_pairs(DFSContext *ctx) {
+    return ; 
     if (!ctx || !ctx->cl || ctx->cl->len == 0) return;
 
     int num_cosets = ctx->cl->len;
@@ -751,15 +279,12 @@ void reorder_cosets_by_candidate_pairs(DFSContext *ctx) {
         int old_idx = coset_indices[i];
         reordered_cosets[i] = ctx->cl->data[old_idx];
         reordered_dft[i] = ctx->dft_matrix[old_idx];
-        reordered_psd[i] = ctx->psd_matrix[old_idx];
     }
 
     free(ctx->cl->data);
     free(ctx->dft_matrix);
-    free(ctx->psd_matrix);
     ctx->cl->data = reordered_cosets;
     ctx->dft_matrix = reordered_dft;
-    ctx->psd_matrix = reordered_psd;
 
     if (ctx->cl->positions) {
         for (int i = 0; i < num_cosets; i++) {
@@ -773,10 +298,12 @@ void reorder_cosets_by_candidate_pairs(DFSContext *ctx) {
         }
     }
 
-    if (ctx->suffix_ones) {
-        ctx->suffix_ones[num_cosets] = 0;
+    if (ctx->suffix_ones1 && ctx->suffix_ones2) {
+        ctx->suffix_ones1[num_cosets] = 0;
+        ctx->suffix_ones2[num_cosets] = 0;
         for (int i = num_cosets - 1; i >= 0; i--) {
-            ctx->suffix_ones[i] = ctx->suffix_ones[i + 1] + ctx->cl->data[i].len;
+            ctx->suffix_ones1[i] = ctx->suffix_ones1[i + 1] + ctx->cl->data[i].len;
+            ctx->suffix_ones2[i] = ctx->suffix_ones2[i + 1] + ctx->cl->data[i].len;
         }
     }
 
@@ -790,79 +317,152 @@ void reorder_cosets_by_candidate_pairs(DFSContext *ctx) {
 
 static bool is_less_than_candidates_for_vectors(DFSContext *ctx, const int *sequence, const int *bound_bit_sequence, int flag)
 {
-    int dimension_candidate_pairs = (flag == 1) ? ctx->dimension_candidate_pairs1 : ctx->dimension_candidate_pairs2;
-    int *compression = malloc((size_t)dimension_candidate_pairs * sizeof(int));
-    int *compression_bound = malloc((size_t)dimension_candidate_pairs * sizeof(int));
-    uint64_t ***ge = (flag == 1) ? ctx->ge_bitsets1 : ctx->ge_bitsets2;
-    uint64_t ***le = (flag == 1) ? ctx->le_bitsets1 : ctx->le_bitsets2;
-    size_t words_len = (flag == 1) ? ctx->bitset_words1 : ctx->bitset_words2;
-    size_t num_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
-    int max_value = (flag == 1) ? ctx->bitset_max_value1 : ctx->bitset_max_value2;
-    uint64_t *work = (flag == 1) ? ctx->bitset_work1 : ctx->bitset_work2;
-    int *order_buf = (flag == 1) ? ctx->bitset_order1 : ctx->bitset_order2;
-    int *score_buf = (flag == 1) ? ctx->bitset_score1 : ctx->bitset_score2;
-    PrefixRangeIndex *prefix_index = (flag == 1) ? &ctx->prefix_index1 : &ctx->prefix_index2;
-    if (!compression || !compression_bound) {
-        free(compression);
-        free(compression_bound);
+    int N = ctx->N;
+    int full_dimension_1 = (int)ctx->dimension_candidate_pairs1;
+    int full_dimension_2 = (int)ctx->dimension_candidate_pairs2;
+    int half_dimension_1 = full_dimension_1 >> 1;
+    int half_dimension_2 = full_dimension_2 >> 1;
+
+    if (half_dimension_1 <= 0 || half_dimension_2 <= 0) {
         return false;
     }
 
-    CompressSequence(ctx->N, dimension_candidate_pairs, sequence, compression);
-    CompressSequence(ctx->N, dimension_candidate_pairs, bound_bit_sequence, compression_bound);
+    int *compression_1 = calloc((size_t)half_dimension_1, sizeof(int));
+    int *compression_bound_1 = calloc((size_t)half_dimension_1, sizeof(int));
+    int *compression_2 = calloc((size_t)half_dimension_2, sizeof(int));
+    int *compression_bound_2 = calloc((size_t)half_dimension_2, sizeof(int));
+    if (!compression_1 || !compression_bound_1 || !compression_2 || !compression_bound_2) {
+        free(compression_1);
+        free(compression_bound_1);
+        free(compression_2);
+        free(compression_bound_2);
+        return false;
+    }
 
-    bool resultado = exists_candidate_in_range_bitset_precomputed(prefix_index,
-                                                                  compression, compression_bound,
-                                                                  (size_t)dimension_candidate_pairs,
-                                                                  ge, le, words_len, num_pairs, max_value,
-                                                                  work, order_buf, score_buf);
-    free(compression);
-    free(compression_bound);
-    return resultado;
+    for (int i = 0; i < N; i++) {
+        compression_1[i % half_dimension_1] += sequence[i];
+        compression_bound_1[i % half_dimension_1] += bound_bit_sequence[i];
+        compression_2[i % half_dimension_2] += sequence[i];
+        compression_bound_2[i % half_dimension_2] += bound_bit_sequence[i];
+    }
+
+    bool feasible_1 = false;
+    int offset_1 = (flag == 0) ? 0 : half_dimension_1;
+    int other_offset_1 = (flag == 0) ? half_dimension_1 : 0;
+    for (size_t r = 0; r < ctx->num_candidate_pairs1; r++) {
+        bool ok = true;
+        for (int c = 0; c < half_dimension_1; c++) {
+            int v = ctx->candidate_pairs1[r][offset_1 + c];
+            int l = compression_1[c];
+            int u = l + compression_bound_1[c];
+            if (!(l <= v && v <= u)) {
+                ok = false;
+                break;
+            }
+        }
+        for (int c = 0; c < half_dimension_1 && ok; c++) {
+            if (ctx->candidate_pairs1[r][other_offset_1 + c] != 0) {
+                ok = false;
+            }
+        }
+        if (ok) {
+            feasible_1 = true;
+            break;
+        }
+    }
+
+    bool feasible_2 = false;
+    int offset_2 = (flag == 0) ? 0 : half_dimension_2;
+    int other_offset_2 = (flag == 0) ? half_dimension_2 : 0;
+    for (size_t r = 0; r < ctx->num_candidate_pairs2; r++) {
+        bool ok = true;
+        for (int c = 0; c < half_dimension_2; c++) {
+            int v = ctx->candidate_pairs2[r][offset_2 + c];
+            int l = compression_2[c];
+            int u = l + compression_bound_2[c];
+            if (!(l <= v && v <= u)) {
+                ok = false;
+                break;
+            }
+        }
+        for (int c = 0; c < half_dimension_2 && ok; c++) {
+            if (ctx->candidate_pairs2[r][other_offset_2 + c] != 0) {
+                ok = false;
+            }
+        }
+        if (ok) {
+            feasible_2 = true;
+            break;
+        }
+    }
+
+    free(compression_1);
+    free(compression_bound_1);
+    free(compression_2);
+    free(compression_bound_2);
+    return feasible_1 && feasible_2;
 }
 
 bool is_less_than_candidates(DFSContext *ctx, int flag)
 {
-    if (!ctx || !ctx->compresion_3 || !ctx->bound_contrassion_3 || !ctx->compression_a || !ctx->compression_b || ctx->p <= 0) {
+    if (!ctx || !ctx->compression_3 || !ctx->bound_compression_3 || !ctx->compression_a || ctx->p <= 0) {
         return false;
     }
-    Coset *selected_coset = &ctx->cl->data[ctx->coset_idx - 1];
     if (flag == 1){
-        for (int t = 0; t < selected_coset->len; t++) {
-            int elem = selected_coset->data[t];
-            int l = ctx->compresion_3[elem % ctx->p];
-            int u = l + ctx->bound_contrassion_3[elem % ctx->p];
-            int ta = ctx->compression_a[elem % ctx->p];
-            int tb = ctx->compression_b[elem % ctx->p];
-            // Miramos la compresión anterior a la actual, que es la que se va a comparar con los candidatos
-            bool p_a = ctx->is_less_compression_a[ctx->coset_idx - 1]; 
-            bool p_b = ctx->is_less_compression_b[ctx->coset_idx - 1];
-            ctx->is_less_compression_a[ctx->coset_idx] = p_a && (l <= ta && ta <= u);
-            ctx->is_less_compression_b[ctx->coset_idx] = p_b && (l <= tb && tb <= u);
-
+        bool ok_legendre = true;
+        for (int i = 0; i < 2 * ctx->p; i++) {
+            int l = ctx->compression_3[i];
+            int u = l + ctx->bound_compression_3[i];
+            int ta = ctx->compression_a[i];
+            if (!(l <= ta && ta <= u)) {
+                ok_legendre = false;
+                break;
+            }
         }
-        if (! ctx->is_less_compression_a[ctx->coset_idx] && ! ctx->is_less_compression_b[ctx->coset_idx]) {
+        ctx->is_less_compression_a[ctx->coset_idx] = ok_legendre;
+        if (! ctx->is_less_compression_a[ctx->coset_idx]) {
             return false;
         }
     }
+    
 
     int dimension_candidate_pairs = (flag == 1) ? ctx->dimension_candidate_pairs1 : ctx->dimension_candidate_pairs2;
     size_t num_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
-    int *compression = (flag == 1) ? ctx->compresion_1 : ctx->compresion_2;
+    int *compression = (flag == 1) ? ctx->compression_1 : ctx->compression_2;
     int *compression_bound = (flag == 1) ? ctx->bound_compression_1 : ctx->bound_compression_2;
     int ** candidate_pairs = (flag == 1) ? ctx->candidate_pairs1 : ctx->candidate_pairs2;
     bool ** is_less_cand = (flag == 1) ? ctx->is_less_candidates_1 : ctx->is_less_candidates_2;
-    bool exists = false;
-    for (int t = 0; t < selected_coset->len; t++) {
-        int elem = selected_coset->data[t];
-        int l = compression[elem % dimension_candidate_pairs];
-        int u = l + compression_bound[elem % dimension_candidate_pairs];
-        for (size_t j = 0; j < num_pairs; j++) {
-            int v = candidate_pairs[j][elem % dimension_candidate_pairs];
-            is_less_cand[ctx->coset_idx][j] = is_less_cand[ctx->coset_idx - 1][j] && (l <= v && v <= u);
-            exists = exists || is_less_cand[ctx->coset_idx][j];
-        }
+    Coset *selected_coset = (ctx->coset_idx > 0) ? &ctx->cl->data[ctx->coset_idx - 1] : NULL;
+    int half_dimension = dimension_candidate_pairs / 2;
+    size_t prev_idx = (ctx->coset_idx > 0) ? (size_t)(ctx->coset_idx - 1) : 0;
 
+    bool exists = false;
+    for (size_t j = 0; j < num_pairs; j++) {
+        bool ok = (ctx->coset_idx > 0) ? is_less_cand[prev_idx][j] : true;
+        if (ok && selected_coset && half_dimension > 0) {
+            for (int t = 0; t < selected_coset->len && ok; t++) {
+                int elem = selected_coset->data[t];
+                int c0 = elem % half_dimension;
+                int c1 = c0 + half_dimension;
+
+                int l0 = compression[c0];
+                int u0 = l0 + compression_bound[c0];
+                int v0 = candidate_pairs[j][c0];
+                if (!(l0 <= v0 && v0 <= u0)) {
+                    ok = false;
+                    break;
+                }
+
+                int l1 = compression[c1];
+                int u1 = l1 + compression_bound[c1];
+                int v1 = candidate_pairs[j][c1];
+                if (!(l1 <= v1 && v1 <= u1)) {
+                    ok = false;
+                }
+            }
+        }
+        is_less_cand[ctx->coset_idx][j] = ok;
+        exists = exists || ok;
     }
     return exists;
 }
@@ -880,61 +480,106 @@ bool is_compression_of_candidates(const DFSContext *ctx, const int *sequence, in
     return (pos != -1);
 }
 
+static bool compression_state_matches_candidates(const DFSContext *ctx, int flag) {
+    const int *compression = (flag == 1) ? ctx->compression_1 : ctx->compression_2;
+    int **candidate_pairs = (flag == 1) ? ctx->candidate_pairs1 : ctx->candidate_pairs2;
+    size_t num_pairs = (flag == 1) ? ctx->num_candidate_pairs1 : ctx->num_candidate_pairs2;
+    int dimension = (flag == 1) ? (int)ctx->dimension_candidate_pairs1 : (int)ctx->dimension_candidate_pairs2;
+
+    for (size_t r = 0; r < num_pairs; r++) {
+        bool same = true;
+        for (int c = 0; c < dimension; c++) {
+            if (compression[c] != candidate_pairs[r][c]) {
+                same = false;
+                break;
+            }
+        }
+        if (same) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static bool check_weight_feasibility(const DFSContext *ctx) {
+    if (ctx->current_ones1 > ctx->target_ones || ctx->current_ones2 > ctx->target_ones) {
+        return false;
+    }
+    if (ctx->current_ones1 + ctx->suffix_ones1[ctx->coset_idx] < ctx->target_ones ||
+        ctx->current_ones2 + ctx->suffix_ones2[ctx->coset_idx] < ctx->target_ones) {
+        return false;
+    }
+    return true;
+}
+
 bool check_bound(DFSContext *ctx) {
+    if (!check_weight_feasibility(ctx)) {
+        return false;
+    }
+
     bool result = is_less_than_candidates(ctx, 1) &&
                   is_less_than_candidates(ctx, 0);
     if (!result) {
         return false;
     }
-    double max_lower_bound = 0.0;
+    return result;
+    double max_lower_bound_sum = 0.0;
     for (int j = 1; j < ctx->spectrum_size; j++) {
-        double current_abs = cabs(ctx->current_dft[j]);
-        ctx->current_psd[j] = (int)rint(pow(current_abs, 2));
-        double lower_bound_psd = pow(fmax(0.0, current_abs - ctx->current_bound[j]), 2.0);
-        if (lower_bound_psd > max_lower_bound) {
-            max_lower_bound = lower_bound_psd;
+        double current_abs_0 = cabs(ctx->current_dft[j]);
+        double current_abs_1 = cabs(ctx->current_dft[j + ctx->N]);
+        ctx->current_psd[j] = (int)rint(pow(current_abs_0, 2));
+        ctx->current_psd[j + ctx->N] = (int)rint(pow(current_abs_1, 2));
+
+        double lower_bound_psd_0 = pow(fmax(0.0, current_abs_0 - ctx->current_bound[j]), 2.0);
+        double lower_bound_psd_1 = pow(fmax(0.0, current_abs_1 - ctx->current_bound[j + ctx->N]), 2.0);
+        double lower_bound_sum = lower_bound_psd_0 + lower_bound_psd_1;
+        if (lower_bound_sum > max_lower_bound_sum) {
+            max_lower_bound_sum = lower_bound_sum;
         }
     }
-    return max_lower_bound <= ctx->threshold;
+    return max_lower_bound_sum <= ctx->threshold;
 }
 
 bool is_valid_combination(const DFSContext *ctx) {
-    //int *vector_bits = generate_vector_for_combination(ctx->cl, ctx->current_combination, ctx->N);
-
-    int *temp= ctx->current_sequence; //convert_to_binary_vector(vector_bits, ctx->N);
-    //free(vector_bits);
-    int temp_psd = -1;
     bool result = false;
-    if (is_compression_of_candidates(ctx,temp,0) && is_compression_of_candidates(ctx,temp,1))
+    if (compression_state_matches_candidates(ctx, 0) &&
+        compression_state_matches_candidates(ctx, 1))
     {
         result = true;
         for (int j = 1; (j < ctx->spectrum_size) && result; j++) {
-            double real_part = creal(ctx->current_dft[j]);
-            double imag_part = cimag(ctx->current_dft[j]);
-            temp_psd = (int)(real_part * real_part + imag_part * imag_part);
-            ctx->current_psd[j] = temp_psd;
-            result = (temp_psd <= ctx->threshold);
+            double real_part_0 = creal(ctx->current_dft[j]);
+            double imag_part_0 = cimag(ctx->current_dft[j]);
+            int psd_0 = (int)rint(real_part_0 * real_part_0 + imag_part_0 * imag_part_0);
+
+            double real_part_1 = creal(ctx->current_dft[j + ctx->N]);
+            double imag_part_1 = cimag(ctx->current_dft[j + ctx->N]);
+            int psd_1 = (int)rint(real_part_1 * real_part_1 + imag_part_1 * imag_part_1);
+
+            ctx->current_psd[j] = psd_0;
+            ctx->current_psd[j + ctx->N] = psd_1;
+            result = ((psd_0 + psd_1) == ctx->threshold);
         }
-        
     }
     return result;
 }
 
 void dfs_explore_combinations(DFSContext *ctx)
 {
-    if (ctx->current_ones > ctx->target_ones) {
+    if (ctx->current_ones1 > ctx->target_ones || ctx->current_ones2 > ctx->target_ones) {
         return;
     }
 
-    if (ctx->current_ones + ctx->suffix_ones[ctx->coset_idx] < ctx->target_ones) {
+    if (ctx->current_ones1 + ctx->suffix_ones1[ctx->coset_idx] < ctx->target_ones ||
+        ctx->current_ones2 + ctx->suffix_ones2[ctx->coset_idx] < ctx->target_ones ) {
         return;
     }
 
     /* Caso base: hemos procesado todos los cosets o ya tenemos el peso objetivo. */
-    if (ctx->coset_idx == ctx->cl->len || ctx->current_ones == ctx->target_ones) {
+    if (ctx->coset_idx == ctx->cl->len || 
+        (ctx->current_ones1 == ctx->target_ones && ctx->current_ones2 == ctx->target_ones)) {
         if (is_valid_combination(ctx)) {
             ctx->matches_found++;
-            for (int j = 0; j < ctx->N; j++) {
+            for (int j = 0; j < ctx-> N * 2; j++) {
                 fprintf(ctx->f_comb, "%u", ctx->current_sequence[j]);
             }
             fprintf(ctx->f_comb, "\n");
@@ -946,7 +591,7 @@ void dfs_explore_combinations(DFSContext *ctx)
             //free(time_domain_exact);
             for (int j = 1; j < ctx->spectrum_size; j++) {
                 int psd_val = ctx->current_psd[j];
-                int transformed = ctx->threshold - psd_val;
+                int transformed = ctx->current_psd[j+ctx->N];
 
                 if (j > 1) {
                     fprintf(ctx->f_psd, " ");
@@ -964,12 +609,127 @@ void dfs_explore_combinations(DFSContext *ctx)
         }
         return;
     }
+    printf("Exploring coset index %d with current ones (%d, %d) and target ones %d\n", ctx->coset_idx, 
+                                                                                    ctx->current_ones1, 
+                                                                                    ctx->current_ones2, 
+                                                                                    ctx->target_ones);
+    printf("Current sequence:\n");
+    for (int i = 0; i < 2* ctx->N; i++) {
+        printf("%d ", ctx->current_sequence[i]);
+    }
+    printf("\n");
+    printf("compressions:\n");
+    int dimension_candidate_pairs = ctx->dimension_candidate_pairs1;
+    for (int i = 0; i < dimension_candidate_pairs; i++) {
+        printf("%d ", ctx->compression_1[i]);
+    }
+    printf("\n");
+    int num_pairs = ctx->num_candidate_pairs1;
+    int ** candidate_pairs = ctx->candidate_pairs1;
+    printf("candidates:\n");
+    for (size_t j = 0; j < num_pairs; j++) {
+        for (int c = 0; c < dimension_candidate_pairs; c++) {
+            printf("%d ", candidate_pairs[j][c]);
+        }
+        printf("\n");
+    }
+    for (int alfabet_val_0 = 0; alfabet_val_0 < ALFABET_SIZE; alfabet_val_0++) {
+        for (int alfabet_val_1 = 0; alfabet_val_1 < ALFABET_SIZE; alfabet_val_1++) {
+            double complex *current_dft_backup = malloc((size_t)(2 * ctx->N) * sizeof(double complex));
+            if (!current_dft_backup) {
+                return;
+            }
+            memcpy(current_dft_backup, ctx->current_dft, (size_t)(2 * ctx->N) * sizeof(double complex));
 
-    for (int alfabet_val = 0; alfabet_val < ALFABET_SIZE; alfabet_val++) {
-        double complex *current_dft_backup = malloc(ctx->N * sizeof(double complex));
-        memcpy(current_dft_backup, ctx->current_dft, ctx->N * sizeof(double complex));
+            if (alfabet_val_0 == 1) {
+                ctx->current_ones1 += ctx->cl->data[ctx->coset_idx].len;
+                ctx->current_combination1[ctx->pos_depth_1] = ctx->coset_idx;
+                ctx->pos_depth_1++;
+                ctx->current_combination1[ctx->pos_depth_1] = -1;
+            }
 
-        if (alfabet_val == 1) {
+            if (alfabet_val_1 == 1) {
+                ctx->current_ones2 += ctx->cl->data[ctx->coset_idx].len;
+                ctx->current_combination2[ctx->pos_depth_2] = ctx->coset_idx;
+                ctx->pos_depth_2++;
+                ctx->current_combination2[ctx->pos_depth_2] = -1;
+            }
+
+            int dim1 = (int)ctx->dimension_candidate_pairs1 / 2;
+            int dim2 = (int)ctx->dimension_candidate_pairs2 / 2;
+            Coset *selected_coset = &ctx->cl->data[ctx->coset_idx];
+            for (int t = 0; t < selected_coset->len; t++) {
+                int elem = selected_coset->data[t];
+                ctx->current_sequence[elem] = alfabet_val_0;
+                ctx->current_sequence[elem + ctx->N] = alfabet_val_1;
+
+                ctx->compression_1[elem % dim1] += alfabet_val_0;
+                ctx->compression_1[(elem % dim1) + dim1] += alfabet_val_1;
+                ctx->compression_2[elem % dim2] += alfabet_val_0;
+                ctx->compression_2[(elem % dim2) + dim2] += alfabet_val_1;
+                ctx->compression_3[elem % ctx->p] += alfabet_val_0;
+                ctx->compression_3[(elem % ctx->p) + ctx->p] += alfabet_val_1;
+
+                ctx->bound_compression_1[elem % dim1] -= 1;
+                ctx->bound_compression_1[(elem % dim1) + dim1] -= 1;
+                ctx->bound_compression_2[elem % dim2] -= 1;
+                ctx->bound_compression_2[(elem % dim2) + dim2] -= 1;
+                ctx->bound_compression_3[elem % ctx->p] -= 1;
+                ctx->bound_compression_3[(elem % ctx->p) + ctx->p] -= 1;
+            }
+
+            for (int j = 0; j < ctx->spectrum_size; j++) {
+                ctx->current_dft[j] += alfabet_val_0 * ctx->dft_matrix[ctx->coset_idx][j];
+                ctx->current_dft[j + ctx->N] += alfabet_val_1 * ctx->dft_matrix[ctx->coset_idx][j];
+            }
+
+            ctx->coset_idx++;
+            ctx->current_bound = ctx->depth_exploration_bound[ctx->coset_idx];
+            bool can_recurse = check_bound(ctx);
+            if (can_recurse) {
+                dfs_explore_combinations(ctx);
+            }
+
+            memcpy(ctx->current_dft, current_dft_backup, (size_t)(2 * ctx->N) * sizeof(double complex));
+            free(current_dft_backup);
+
+            ctx->coset_idx--;
+            for (int t = 0; t < selected_coset->len; t++) {
+                int elem = selected_coset->data[t];
+                ctx->current_sequence[elem] = 0;
+                ctx->current_sequence[elem + ctx->N] = 0;
+
+                ctx->compression_1[elem % dim1] -= alfabet_val_0;
+                ctx->compression_1[(elem % dim1) + dim1] -= alfabet_val_1;
+                ctx->compression_2[elem % dim2] -= alfabet_val_0;
+                ctx->compression_2[(elem % dim2) + dim2] -= alfabet_val_1;
+                ctx->compression_3[elem % ctx->p] -= alfabet_val_0;
+                ctx->compression_3[(elem % ctx->p) + ctx->p] -= alfabet_val_1;
+
+                ctx->bound_compression_1[elem % dim1] += 1;
+                ctx->bound_compression_1[(elem % dim1) + dim1] += 1;
+                ctx->bound_compression_2[elem % dim2] += 1;
+                ctx->bound_compression_2[(elem % dim2) + dim2] += 1;
+                ctx->bound_compression_3[elem % ctx->p] += 1;
+                ctx->bound_compression_3[(elem % ctx->p) + ctx->p] += 1;
+            }
+
+            if (alfabet_val_0 == 1) {
+                ctx->current_ones1 -= ctx->cl->data[ctx->coset_idx].len;
+                ctx->pos_depth_1--;
+                ctx->current_combination1[ctx->pos_depth_1] = -1;
+            }
+            if (alfabet_val_1 == 1) {
+                ctx->current_ones2 -= ctx->cl->data[ctx->coset_idx].len;
+                ctx->pos_depth_2--;
+                ctx->current_combination2[ctx->pos_depth_2] = -1;
+            }
+        }
+    }
+}
+
+/*
+            if (alfabet_val_0 == 1 && alfabet_val_1 == 1) {
             ctx->current_combination[ctx->pos_depth] = ctx->coset_idx;
             ctx->current_ones += ctx->cl->data[ctx->coset_idx].len;
             ctx->pos_depth++;
@@ -1043,8 +803,8 @@ void dfs_explore_combinations(DFSContext *ctx)
             ctx->current_ones -= ctx->cl->data[ctx->coset_idx].len;
             ctx->current_combination[ctx->pos_depth] = -1;
         }
-    }
-}
+    }*/
+
 
 
 // ...existing code (compute_depth_exploration_bounds, free_depth_exploration_bounds)...
@@ -1065,7 +825,7 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
     }
 
     for (int i = 0; i <= num_cosets; i++) {
-        bounds[i] = calloc(N, sizeof(double));
+        bounds[i] = calloc(2 * N, sizeof(double));
         if (!bounds[i]) {
             for (int k = 0; k < i; k++) free(bounds[k]);
             free(bounds);
@@ -1076,12 +836,15 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
 
     int direct_limit = (DEPTH - 1 < num_cosets) ? (DEPTH - 1) : num_cosets;
     for (int i = 1; i <= direct_limit; i++) {
-        for (int j = 0; j < ctx->spectrum_size; j++) {
-            double acc = 0.0;
-            for (int k = i; k < num_cosets; k++) {
-                acc += cabs(ctx->dft_matrix[k][j]);
+        for (int half = 0; half < 2; half++) {
+            int out_offset = half * N;
+            for (int j = 0; j < ctx->spectrum_size; j++) {
+                double acc = 0.0;
+                for (int k = i; k < num_cosets; k++) {
+                    acc += cabs(ctx->dft_matrix[k][j]);
+                }
+                bounds[i][j + out_offset] = acc;
             }
-            bounds[i][j] = acc;
         }
     }
 
@@ -1094,12 +857,15 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
             }
 
             if (d > DEPTH) {
-                for (int j = 0; j < ctx->spectrum_size; j++) {
-                    double acc = 0.0;
-                    for (int k = i; k < num_cosets; k++) {
-                        acc += cabs(ctx->dft_matrix[k][j]);
+                for (int half = 0; half < 2; half++) {
+                    int out_offset = half * N;
+                    for (int j = 0; j < ctx->spectrum_size; j++) {
+                        double acc = 0.0;
+                        for (int k = i; k < num_cosets; k++) {
+                            acc += cabs(ctx->dft_matrix[k][j]);
+                        }
+                        bounds[i][j + out_offset] = acc;
                     }
-                    bounds[i][j] = acc;
                 }
                 continue;
             }
@@ -1129,10 +895,8 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
                  * cancelacion entre ambos. Este bound debe seguir siendo
                  * conservador respecto al prefijo actual.
                  */
-                bool passes = is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 1) &&
-                              is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 0);
 
-                if (passes) {
+                if (is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 0)) {
                     for (int j = 0; j < ctx->spectrum_size; j++) {
                         double complex val = 0.0;
                         for (int k = 0; k < d; k++) {
@@ -1145,6 +909,20 @@ static double **compute_depth_exploration_bounds(DFSContext *ctx) {
                         }
                     }
                 }
+                if (is_less_than_candidates_for_vectors(ctx, seq, bound_seq, 1)) {
+                    for (int j = 0; j < ctx->spectrum_size; j++) {
+                        double complex val = 0.0;
+                        for (int k = 0; k < d; k++) {
+                            int bit = (combo >> k) & 1;
+                            val += bit * ctx->dft_matrix[start_coset + k][j];
+                        }
+                        double abs_val = cabs(val);
+                        if (abs_val > bounds[i][j+N]) {
+                            bounds[i][j+N] = abs_val;
+                        }
+                    }
+                }
+
                 free(seq);
             }
             free(bound_seq);
@@ -1173,75 +951,85 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     int spectrum_size = (N  + 1)/2;
     //int spectrum_size = 20;
     double complex **dft_matrix = malloc(cl->len * sizeof(double complex *));
-    double complex **dft_backup = malloc(cl->len * sizeof(double complex *));
-    int **psd_matrix = malloc(cl->len * sizeof(int *));
+    double complex **dft_backup = malloc((cl->len + 1) * sizeof(double complex *));
 
     for (int i = 0; i < cl->len; i++) {
         dft_matrix[i] = malloc(N * sizeof(double complex));
-        psd_matrix[i] = malloc(N * sizeof(int));
-        dft_backup[i] = malloc(N * sizeof(double complex));
+        dft_backup[i] = malloc(2 * N * sizeof(double complex));
     }
+    dft_backup[cl->len] = malloc(2 * N * sizeof(double complex)); // Para backup temporal en DFS
 
     double complex *time_domain = malloc(N * sizeof(double complex));
     double complex *freq_domain = malloc(N * sizeof(double complex));
+    double complex *base_dft = malloc(N * sizeof(double complex));
     int *bound_psd = calloc(N, sizeof(int));
-    int *compression_a = malloc(p * sizeof(int));
-    int *compression_b = malloc(p * sizeof(int));
-    double complex *current_dft = calloc(N, sizeof(double complex));
-    int *current_sequence = calloc((size_t)N, sizeof(int));
-    int *current_psd = calloc((size_t)N, sizeof(int));
-    int *remaining_bits = calloc((size_t)N, sizeof(int));
+    int *compression_a = malloc(2 * p * sizeof(int));
+    double complex *current_dft = calloc((size_t)(2 * N), sizeof(double complex));
+    int *current_sequence = calloc((size_t)(2 * N), sizeof(int)); 
+    int *current_psd = calloc((size_t)(2 * N), sizeof(int));
+    int *remaining_bits = calloc((size_t)(2 * N), sizeof(int));
     int *compresion_1 = NULL;
     int *compresion_2 = NULL;
     int *bound_compression_1 = NULL;
     int *bound_compression_2 = NULL;
     int *compresion_3 = NULL;
-    int *bound_contrassion_3 = NULL;
-    int *combination = malloc(cl->len * sizeof(int));
-    int *suffix_ones = calloc(cl->len + 1, sizeof(int));
+    int *bound_compression_3 = NULL;
+    int *combination1 = malloc(cl->len * sizeof(int)); // these are the cosets for the first sequence
+    int *combination2 = malloc(cl->len * sizeof(int)); // These are the cosets for the second sequence
+    int *suffix_ones1 = calloc(cl->len + 1, sizeof(int));
+    int *suffix_ones2 = calloc(cl->len + 1, sizeof(int));
     bool *is_less_compression_a = malloc((size_t)(cl->len + 1) * sizeof(bool));
-    bool *is_less_compression_b = malloc((size_t)(cl->len + 1) * sizeof(bool));
-    double *current_bound = malloc(N * sizeof(double));
+    double *current_bound = malloc((2 * N) * sizeof(double));
 
-    if (!current_bound || !combination || !suffix_ones || !current_sequence || !current_psd || !remaining_bits ||
-        !is_less_compression_a || !is_less_compression_b) {
+    if (!current_bound || !combination1 || !combination2 || !suffix_ones1 || !suffix_ones2 || !current_sequence || !current_psd || !remaining_bits ||
+        !is_less_compression_a || !base_dft) {
         printf("ERROR: No se pudo asignar memoria\n");
         free(current_dft);
         free(current_sequence);
         free(current_psd);
         free(remaining_bits);
-        free(combination);
-        free(suffix_ones);
+        free(combination1);
+        free(combination2);
+        free(suffix_ones1);
+        free(suffix_ones2);
         free(is_less_compression_a);
-        free(is_less_compression_b);
         free(compression_a);
-        free(compression_b);
         free(compresion_3);
-        free(bound_contrassion_3);
+        free(bound_compression_3);
         for (int i = 0; i < cl->len; i++) {
             free(dft_matrix[i]);
-            free(psd_matrix[i]);
             free(dft_backup[i]);    
         }
+        free(dft_backup[cl->len]);
         free(dft_matrix);
-        free(psd_matrix);
+        free(dft_backup);
         free(dft_backup);
         return;
     }
 
     /* Inicializar combination como lista vacía terminada en -1 */
     for (int i = 0; i < cl->len; i++) {
-        combination[i] = -1;
+        combination1[i] = -1;
+        combination2[i] = -1;
     }
     for (int i = 0; i <= cl->len; i++) {
         is_less_compression_a[i] = true;
-        is_less_compression_b[i] = true;
     }
 
-    legendre_sequence(p, q, compression_a, 1);
-    legendre_sequence(p, q, compression_b, -1);
+    legendre_sequence(p, q, compression_a);
 
-    /* Calcular DFT y PSD para cada coset usando buffer temporal */
+    /* DFT base para la secuencia nula (todo 0 en binario -> todo 1 en dominio temporal). */
+    int *zero_bits = calloc((size_t)N, sizeof(int));
+    if (!zero_bits) {
+        printf("ERROR: No se pudo asignar memoria para zero_bits\n");
+        free(base_dft);
+        return;
+    }
+    binary_to_complex(zero_bits, time_domain, N);
+    dft(time_domain, base_dft, N);
+    free(zero_bits);
+
+    /* Calcular contribucion DFT por coset respecto a la base. */
     int *single_coset_comb = malloc(cl->len * sizeof(int));
     for (int i = 0; i < cl->len; i++) single_coset_comb[i] = -1;
 
@@ -1254,12 +1042,12 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         dft(time_domain, freq_domain, N);
 
         for (int j = 0; j < N; j++) {
-            dft_matrix[i][j] = freq_domain[j];
+            dft_matrix[i][j] = freq_domain[j] - base_dft[j];
             dft_backup[i][j] = 0.0 + 0.0 * I;
+            dft_backup[i][j+N] = 0.0 + 0.0 * I;
         }
         for (int j = 0; j < spectrum_size; j++) {
-            psd_matrix[i][j] = (int)rint(pow(cabs(freq_domain[j]), 2));
-            bound_psd[j] += psd_matrix[i][j];
+            bound_psd[j] += (int)rint(pow(cabs(freq_domain[j]), 2));
         }
         free(vector_bits);
     }
@@ -1270,9 +1058,10 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
 
     /* Asegurar estado inicial DFS vacío */
     for (int i = 0; i < cl->len; i++) {
-        combination[i] = -1;
+        combination1[i] = -1;
+        combination2[i] = -1;
     }
-    for (int i = 0; i < N; i++) {
+    for (int i = 0; i < 2 * N; i++) {
         remaining_bits[i] = 0;
     }
     for (int i = 0; i < cl->len; i++) {
@@ -1281,21 +1070,36 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
             int elem = c->data[j];
             if (elem >= 0 && elem < N) {
                 remaining_bits[elem] = 1;
+                remaining_bits[elem + N] = 1; // Para la segunda secuencia
             }
         }
     }
 
-    suffix_ones[cl->len] = 0;
+    suffix_ones1[cl->len] = 0;
+    suffix_ones2[cl->len] = 0;
     for (int i = cl->len - 1; i >= 0; i--) {
-        suffix_ones[i] = suffix_ones[i + 1] + cl->data[i].len;
+        suffix_ones1[i] = suffix_ones1[i + 1] + cl->data[i].len;
+        suffix_ones2[i] = suffix_ones2[i + 1] + cl->data[i].len;
     }
 
     // Inicializar current_bound con la suma de valores absolutos de la DFT para cada frecuencia
+    /*
+     * current_dft[0..N-1]  -> DFT incremental de current_sequence[0..N-1]
+     * current_dft[N..2N-1] -> DFT incremental de current_sequence[N..2N-1]
+     * Ambas parten de la DFT base (secuencia todo 0 en binario) y se actualizan
+     * sumando/restando deltas por coset durante el DFS.
+     */
     for (int j = 0; j < spectrum_size; j++) {
         current_bound[j] = 0.0;
+        current_bound[j + N] = 0.0;
+        current_dft[j] = base_dft[j];
+        current_dft[j + N] = base_dft[j];
         current_psd[j] = 0;
+        current_psd[j + N] = 0;
         for (int i = 0; i < cl->len; i++) {
-            current_bound[j] += cabs(dft_matrix[i][j]);
+            double abs_delta = cabs(dft_matrix[i][j]);
+            current_bound[j] += abs_delta;
+            current_bound[j + N] += abs_delta;
         }
     }
 
@@ -1326,30 +1130,22 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     compresion_2 = calloc(cols2 ? cols2 : 1, sizeof(int));
     bound_compression_1 = calloc(cols1 ? cols1 : 1, sizeof(int));
     bound_compression_2 = calloc(cols2 ? cols2 : 1, sizeof(int));
-    compresion_3 = calloc((size_t)p, sizeof(int));
-    bound_contrassion_3 = calloc((size_t)p, sizeof(int));
+    compresion_3 = calloc((size_t)(2 * p), sizeof(int));
+    bound_compression_3 = calloc((size_t)(2 * p ), sizeof(int));
 
-    int max_value1 = (cols1 > 0) ? (N / (int)cols1) : 0;
-    int max_value2 = (cols2 > 0) ? (N / (int)cols2) : 0;
-    uint64_t ***ge_bitsets1 = NULL;
-    uint64_t ***le_bitsets1 = NULL;
-    uint64_t ***ge_bitsets2 = NULL;
-    uint64_t ***le_bitsets2 = NULL;
-    size_t bitset_words1 = 0;
-    size_t bitset_words2 = 0;
-    uint64_t *bitset_work1 = NULL;
-    uint64_t *bitset_work2 = NULL;
-    int *bitset_order1 = NULL;
-    int *bitset_order2 = NULL;
-    int *bitset_score1 = NULL;
-    int *bitset_score2 = NULL;
+    int max_value1 = (cols1 > 0) ? (2 * N / (int)cols1) : 0;
+    int max_value2 = (cols2 > 0) ? (2 * N / (int)cols2) : 0;
     bool **is_less_candidates_1 = NULL;
     bool **is_less_candidates_2 = NULL;
-    PrefixRangeIndex prefix_index1 = {0};
-    PrefixRangeIndex prefix_index2 = {0};
+    if (rows1 > 0) {
+        is_less_candidates_1 = allocate_bool_matrix((size_t)(cl->len + 1), rows1);
+    }
+    if (rows2 > 0) {
+        is_less_candidates_2 = allocate_bool_matrix((size_t)(cl->len + 1), rows2);
+    }
     if (!f_comb || !f_psd || !f_cte || !candidate1 || !candidate2 ||
         !compresion_1 || !compresion_2 || !bound_compression_1 || !bound_compression_2 ||
-        !compresion_3 || !bound_contrassion_3 ||
+        !compresion_3 || !bound_compression_3 ||
         cols1 == 0 || cols2 == 0) {
         printf("ERROR: No se pudieron abrir los archivos o leer los pares de: %s y %s.\n", pairs_file1, pairs_file2);
         if (!f_comb) perror("fopen comb_filename");
@@ -1361,13 +1157,12 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         if (candidate1) free_pairs(candidate1, rows1);
         if (candidate2) free_pairs(candidate2, rows2);
         free(current_bound);
+        free(base_dft);
 
         for (int i = 0; i < cl->len; i++) {
             free(dft_matrix[i]);
-            free(psd_matrix[i]);
         }
         free(dft_matrix);
-        free(psd_matrix);
         free(current_dft);
         free(current_sequence);
         free(remaining_bits);
@@ -1375,188 +1170,32 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         free(compresion_2);
         free(bound_compression_1);
         free(bound_compression_2);
-        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-        free(bitset_work1);
-        free(bitset_work2);
-        free(bitset_order1);
-        free(bitset_order2);
-        free(bitset_score1);
-        free(bitset_score2);
-        free_prefix_range_index(&prefix_index1);
-        free_prefix_range_index(&prefix_index2);
         free(bound_psd);
-        free(combination);
-        free(suffix_ones);
+        free(combination1);
+        free(combination2);
+        free(suffix_ones1);
+        free(suffix_ones2);
         free(is_less_compression_a);
-        free(is_less_compression_b);
         free(compression_a);
-        free(compression_b);
         free(compresion_3);
-        free(bound_contrassion_3);
+        free(bound_compression_3);
         return;
     }
-
-    if (!build_candidate_bitsets(candidate1, rows1, cols1, max_value1,
-                                 &ge_bitsets1, &le_bitsets1, &bitset_words1) ||
-        !build_candidate_bitsets(candidate2, rows2, cols2, max_value2,
-                                 &ge_bitsets2, &le_bitsets2, &bitset_words2)) {
-        printf("ERROR: No se pudo construir indice de bitsets para candidatos.\n");
-        if (f_comb) fclose(f_comb);
-        if (f_psd) fclose(f_psd);
-        if (f_cte) fclose(f_cte);
-        if (candidate1) free_pairs(candidate1, rows1);
-        if (candidate2) free_pairs(candidate2, rows2);
-        free(current_bound);
-        for (int i = 0; i < cl->len; i++) {
-            free(dft_matrix[i]);
-            free(psd_matrix[i]);
-        }
-        free(dft_matrix);
-        free(psd_matrix);
-        free(current_dft);
-        free(current_sequence);
-        free(remaining_bits);
-        free(compresion_1);
-        free(compresion_2);
-        free(bound_compression_1);
-        free(bound_compression_2);
-        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-        free(bitset_work1);
-        free(bitset_work2);
-        free(bitset_order1);
-        free(bitset_order2);
-        free(bitset_score1);
-        free(bitset_score2);
-        free_prefix_range_index(&prefix_index1);
-        free_prefix_range_index(&prefix_index2);
-        free(bound_psd);
-        free(combination);
-        free(suffix_ones);
-        free(is_less_compression_a);
-        free(is_less_compression_b);
-        free(compression_a);
-        free(compression_b);
-        free(compresion_3);
-        free(bound_contrassion_3);
-        return;
-    }
-
-    is_less_candidates_1 = alloc_bool_matrix_true((size_t)(cl->len + 1), rows1);
-    is_less_candidates_2 = alloc_bool_matrix_true((size_t)(cl->len + 1), rows2);
-    if (!is_less_candidates_1 || !is_less_candidates_2) {
-        printf("ERROR: No se pudo asignar memoria para is_less_candidates_1/2.\n");
-        if (f_comb) fclose(f_comb);
-        if (f_psd) fclose(f_psd);
-        if (f_cte) fclose(f_cte);
-        if (candidate1) free_pairs(candidate1, rows1);
-        if (candidate2) free_pairs(candidate2, rows2);
-        free(current_bound);
-        for (int i = 0; i < cl->len; i++) {
-            free(dft_matrix[i]);
-            free(psd_matrix[i]);
-        }
-        free(dft_matrix);
-        free(psd_matrix);
-        free(current_dft);
-        free(current_sequence);
-        free(remaining_bits);
-        free(compresion_1);
-        free(compresion_2);
-        free(bound_compression_1);
-        free(bound_compression_2);
-        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-        free(bitset_work1);
-        free(bitset_work2);
-        free(bitset_order1);
-        free(bitset_order2);
-        free(bitset_score1);
-        free(bitset_score2);
-        free_prefix_range_index(&prefix_index1);
-        free_prefix_range_index(&prefix_index2);
-        free(bound_psd);
-        free(combination);
-        free(suffix_ones);
-        free(is_less_compression_a);
-        free(is_less_compression_b);
-        free(compression_a);
-        free(compression_b);
-        free(compresion_3);
-        free(bound_contrassion_3);
-        free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
-        free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
-        return;
-    }
-
-    if (!build_prefix_range_index((const int *const *)candidate1, rows1, cols1, max_value1, &prefix_index1) ||
-        !build_prefix_range_index((const int *const *)candidate2, rows2, cols2, max_value2, &prefix_index2)) {
-        printf("ADVERTENCIA: No se pudo construir prefiltro para primeras dimensiones; se usa chequeo completo.\n");
-        free_prefix_range_index(&prefix_index1);
-        free_prefix_range_index(&prefix_index2);
-    }
-
-    bitset_work1 = calloc(bitset_words1, sizeof(uint64_t));
-    bitset_work2 = calloc(bitset_words2, sizeof(uint64_t));
-    bitset_order1 = malloc(cols1 * sizeof(int));
-    bitset_order2 = malloc(cols2 * sizeof(int));
-    bitset_score1 = malloc(cols1 * sizeof(int));
-    bitset_score2 = malloc(cols2 * sizeof(int));
-    if (!bitset_work1 || !bitset_work2 || !bitset_order1 || !bitset_order2 || !bitset_score1 || !bitset_score2) {
-        printf("ERROR: No se pudo asignar memoria para bitset_work.\n");
-        if (f_comb) fclose(f_comb);
-        if (f_psd) fclose(f_psd);
-        if (f_cte) fclose(f_cte);
-        if (candidate1) free_pairs(candidate1, rows1);
-        if (candidate2) free_pairs(candidate2, rows2);
-        free(current_bound);
-        for (int i = 0; i < cl->len; i++) {
-            free(dft_matrix[i]);
-            free(psd_matrix[i]);
-        }
-        free(dft_matrix);
-        free(psd_matrix);
-        free(current_dft);
-        free(current_sequence);
-        free(remaining_bits);
-        free(compresion_1);
-        free(compresion_2);
-        free(bound_compression_1);
-        free(bound_compression_2);
-        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-        free(bitset_work1);
-        free(bitset_work2);
-        free(bitset_order1);
-        free(bitset_order2);
-        free(bitset_score1);
-        free(bitset_score2);
-        free_prefix_range_index(&prefix_index1);
-        free_prefix_range_index(&prefix_index2);
-        free(bound_psd);
-        free(combination);
-        free(suffix_ones);
-        free(is_less_compression_a);
-        free(is_less_compression_b);
-        free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
-        free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
-        free(compression_a);
-        free(compression_b);
-        free(compresion_3);
-        free(bound_contrassion_3);
-        return;
-    }
-
     for (int i = 0; i < N; i++) {
         if (remaining_bits[i]) {
-            bound_compression_1[i % (int)cols1] += 1;
-            bound_compression_2[i % (int)cols2] += 1;
-            bound_contrassion_3[i % p] += 1;
+            int half_cols1 = (int)(cols1 / 2);
+            int half_cols2 = (int)(cols2 / 2);
+            bound_compression_1[i % half_cols1] += 1;
+            bound_compression_1[(i % half_cols1) + half_cols1] += 1;
+            bound_compression_2[i % half_cols2] += 1;
+            bound_compression_2[(i % half_cols2) + half_cols2] += 1;
+            bound_compression_3[i % p] += 1;
+            bound_compression_3[(i % p) + p] += 1;
         }
     }
 
-    combination[0] = -1;
+    combination1[0] = -1;
+    combination2[0] = -1;
     // Preparar contexto
     DFSContext ctx = {
         .f_comb = f_comb,
@@ -1574,21 +1213,20 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .num_cosets = cl->len,
         .dft_matrix = dft_matrix,
         .dft_backup = dft_backup,
-        .psd_matrix = psd_matrix,
         .current_dft = current_dft,
         .bound_psd = bound_psd,
         .current_sequence = current_sequence,
         .remaining_bits = remaining_bits,
-        .compresion_1 = compresion_1,
-        .compresion_2 = compresion_2,
+        .compression_1 = compresion_1,
+        .compression_2 = compresion_2,
         .bound_compression_1 = bound_compression_1,
         .bound_compression_2 = bound_compression_2,
-        .compresion_3 = compresion_3,
-        .bound_contrassion_3 = bound_contrassion_3,
+        .compression_3 = compresion_3,
+        .bound_compression_3 = bound_compression_3,
         .compression_a = compression_a,
-        .compression_b = compression_b,
         .cl = cl,
-        .current_combination = combination,
+        .current_combination1 = combination1,
+        .current_combination2 = combination2,
         .coset_idx = 0,
         .candidate_pairs1 = candidate1,
         .num_candidate_pairs1 = rows1,
@@ -1598,32 +1236,18 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         .dimension_candidate_pairs2 = cols2,
         .current_bound = current_bound,
         .depth_exploration_bound = NULL,
-        .pos_depth = 0,
-        .current_ones = 0,
+        .pos_depth_1 = 0,
+        .pos_depth_2 = 0,
+        .current_ones1 = 0,
+        .current_ones2 = 0,
         .target_ones = (N + 1) / 2,
         .spectrum_size = spectrum_size,
-        .suffix_ones = suffix_ones,
+        .suffix_ones1 = suffix_ones1,
+        .suffix_ones2 = suffix_ones2,
         .current_psd = current_psd,
         .is_less_compression_a = is_less_compression_a,
-        .is_less_compression_b = is_less_compression_b,
         .is_less_candidates_1 = is_less_candidates_1,
         .is_less_candidates_2 = is_less_candidates_2,
-        .ge_bitsets1 = ge_bitsets1,
-        .le_bitsets1 = le_bitsets1,
-        .bitset_words1 = bitset_words1,
-        .bitset_max_value1 = max_value1,
-        .bitset_work1 = bitset_work1,
-        .bitset_order1 = bitset_order1,
-        .bitset_score1 = bitset_score1,
-        .ge_bitsets2 = ge_bitsets2,
-        .le_bitsets2 = le_bitsets2,
-        .bitset_words2 = bitset_words2,
-        .bitset_max_value2 = max_value2,
-        .bitset_work2 = bitset_work2,
-        .bitset_order2 = bitset_order2,
-        .bitset_score2 = bitset_score2,
-        .prefix_index1 = prefix_index1,
-        .prefix_index2 = prefix_index2
     };
     snprintf(ctx.comb_filename, sizeof(ctx.comb_filename), "%s", comb_filename);
     snprintf(ctx.psd_filename, sizeof(ctx.psd_filename), "%s", psd_filename);
@@ -1632,18 +1256,15 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     reorder_cosets_by_candidate_pairs(&ctx);
     
     // Actualizar punteros locales después de reordenación
-    dft_matrix = ctx.dft_matrix;
-    psd_matrix = ctx.psd_matrix;
+    dft_matrix = ctx.dft_matrix;    
     
     ctx.depth_exploration_bound = compute_depth_exploration_bounds(&ctx);
     if (ctx.depth_exploration_bound == NULL) {
         printf("ERROR: No se pudieron calcular los bounds de exploración por profundidad.\n");
         for (int i = 0; i < cl->len; i++) {
             free(dft_matrix[i]);
-            free(psd_matrix[i]);
         }
         free(dft_matrix);
-        free(psd_matrix);
         free(current_dft);
         free(current_sequence);
         free(remaining_bits);
@@ -1651,27 +1272,18 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
         free(compresion_2);
         free(bound_compression_1);
         free(bound_compression_2);
-        free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-        free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-        free(bitset_work1);
-        free(bitset_work2);
-        free(bitset_order1);
-        free(bitset_order2);
-        free(bitset_score1);
-        free(bitset_score2);
-        free_prefix_range_index(&ctx.prefix_index1);
-        free_prefix_range_index(&ctx.prefix_index2);
         free(bound_psd);
-        free(combination);
-        free(suffix_ones);
+        free(combination1);
+        free(combination2);
+        free(suffix_ones1);
+        free(suffix_ones2);
         free(is_less_compression_a);
-        free(is_less_compression_b);
         free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
         free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
         free(compression_a);
-        free(compression_b);
         free(compresion_3);
-        free(bound_contrassion_3);
+        free(bound_compression_3);
+        free(base_dft);
         if (candidate1) free_pairs(candidate1, rows1);
         if (candidate2) free_pairs(candidate2, rows2);
         free(current_bound);
@@ -1685,21 +1297,25 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     printf("Condicion: Max(PSD) < %d\n\n", threshold);
 
     /* Asegurar que combination empieza vacío antes de DFS */
-    for (int i = 0; i < cl->len; i++) combination[i] = -1;
+    for (int i = 0; i < cl->len; i++) 
+    {
+        combination1[i] = -1;
+        combination2[i] = -1;
+    }
     ctx.coset_idx = 0;
-    ctx.pos_depth = 0;
-    ctx.current_ones = 0;
+    ctx.pos_depth_1 = 0;
+    ctx.pos_depth_2 = 0;
+    ctx.current_ones1 = 0;
+    ctx.current_ones2 = 0;
 
     dfs_explore_combinations(&ctx);
 
     // Limpieza completa de memoria
     for (int i = 0; i < cl->len; i++) {
         free(dft_matrix[i]);
-        free(psd_matrix[i]);
         free(dft_backup[i]);
     }
     free(dft_matrix);
-    free(psd_matrix);
     free(current_dft);
     free(current_sequence);
     free(remaining_bits);
@@ -1707,27 +1323,18 @@ void process_and_filter_vectors_dfs(CosetList *cl, int N, int p, int q,
     free(compresion_2);
     free(bound_compression_1);
     free(bound_compression_2);
-    free_candidate_bitsets(ge_bitsets1, le_bitsets1, cols1, max_value1);
-    free_candidate_bitsets(ge_bitsets2, le_bitsets2, cols2, max_value2);
-    free(bitset_work1);
-    free(bitset_work2);
-    free(bitset_order1);
-    free(bitset_order2);
-    free(bitset_score1);
-    free(bitset_score2);
-    free_prefix_range_index(&ctx.prefix_index1);
-    free_prefix_range_index(&ctx.prefix_index2);
     free(bound_psd);
-    free(combination);
-    free(suffix_ones);
-    free(is_less_compression_a);
-    free(is_less_compression_b);
+    free(combination1);
+    free(combination2);
+    free(suffix_ones1);
+    free(suffix_ones2);
+    free(is_less_compression_a);    
     free_bool_matrix(is_less_candidates_1, (size_t)(cl->len + 1));
     free_bool_matrix(is_less_candidates_2, (size_t)(cl->len + 1));
     free(compression_a);
-    free(compression_b);
     free(compresion_3);
-    free(bound_contrassion_3);
+    free(bound_compression_3);
+    free(base_dft);
     free(current_bound);
     if (candidate1) free_pairs(candidate1, rows1);
     if (candidate2) free_pairs(candidate2, rows2);
