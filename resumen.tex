@@ -1,8 +1,11 @@
-(Esbozo) En este proyecto, tratamos de desarrollas un programa que genere código en C++ en función de variables recibidas. Los ejecutables obtenidos, y dadas las restricciones y opciones previamente seleccionadas, tendrán como salida un par de Legendre de la longitud deseada.
-%
-% Conviene evitar aquí las llamadas a la bibliografía del
-% trabajo, ya que el resumen tiene entidad independiente.
-%
+Los pares de Legendre son pares de secuencias de longitud $\ell$, 
+formadas por ceros y unos que cumplen una relación entre las funciones de
+autocorrelación. Esta relación en las funciones de autocorrelación  es la base del uso de estas secuencias en aplicaciones críticas como sistemas de posicionamiento y sistemas criptográficos.
+A pesar del interés suscitado tanto en la industria como dentro de la investigación, actualmente no se conoce ninguna fórmula cerrada para generarlas para un valor general $\ell$.
 
-%% Aportamos nuestra perspectiva sobre la pertinencia de las
-%% instrucciones {\tt goto}.
+Este Trabajo de Fin de Grado aborda el problema de la búsqueda de pares de Legendre bajo una nueva conjetura.
+Aunque está conjetura simplifica la búsqueda de estos pares de secuencias, el problema sigue siendo un desafío de optimización combinatoria caracterizado por un crecimiento exponencial del espacio de búsqueda, lo que lo hace inabordable mediante una exploración exhaustiva. El objetivo principal es diseñar e implementar un sistema automatizado capaz de generar y ejecutar programas especialmente diseñados para la detección de estos pares, haciendo uso de técnicas avanzadas de metaprogramación y computación de alto rendimiento (HPC).
+Para ello, se propone una solución integral que combina diferentes técnicas:  reducción algebraica mediante cosets ciclotómicos y compresión, junto con algoritmos de búsqueda en profundidad con poda dinámica, estructuras eficientes basadas en bitsets y estrategias probabilísticas como filtros de Bloom en un esquema meet-in-the-middle. Estas técnicas permiten reducir drásticamente la complejidad del problema, tanto en tiempo como en memoria.
+
+Estás técnicas se implementan en un generador de código en C++ que, a partir de parámetros de entrada, produce automáticamente ejecutables, explotando el paralelismo a múltiples niveles mediante OpenMP y la distribución de tareas con Slurm en entornos de supercomputación. Esta aproximación permite aprovechar al máximo las capacidades de arquitecturas modernas, incluyendo vectorización y ejecución superescalar.
+Los experimentos realizados en el supercomputador Altamira demuestran la eficacia del sistema, logrando resolver instancias de tamaño significativo ($\ell$ = 75)  y obteniendo nuevos pares de Legendre válidos, verificados analítica y computacionalmente.
