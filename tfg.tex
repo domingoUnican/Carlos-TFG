@@ -37,8 +37,11 @@
     captionpos=b,
     showstringspaces=false,
     morekeywords={pragma, omp, parallel, for, collapse, atomic}
-}
-
+  }
+\newcommand{\PAF}{\textrm{PAF}}
+\newcommand{\Comentario}[1]{\textcolor{red}{\textbf{[Comentario:
+      #1]}}}
+\newcommand{\seq}[1]{\mathbf{#1}}
 \begin{document}
 
 \hyphenation{Dijkstra new-speak me-ta-pro-gra-ma-ci-on vec-to-ri-za-ci-on pa-ra-le-lis-mo ci-clo-to-mi-cos}
@@ -56,29 +59,323 @@
 % ==============================================================================
 \chapter{Introducción}
 
-En la actualidad, los sistemas de comunicación inalámbrica constituyen la columna vertebral de la infraestructura tecnológica global. Desde la telefonía móvil de última generación (5G/6G) y las redes Wi-Fi de alta velocidad hasta la transmisión satelital y los sistemas de radar de apertura sintética (SAR), la capacidad de transmitir información de manera fiable sin soporte físico ha revolucionado la interacción humana y el acceso masivo a datos. No obstante, estos sistemas operan en un entorno físico intrínsecamente hostil: el canal de transmisión es ruidoso, sujeto a interferencias multi-trayecto, atenuaciones por distancia y distorsiones de fase que comprometen la integridad de la señal.
+En la actualidad, los sistemas de comunicación inalámbrica constituyen
+la columna vertebral de la infraestructura tecnológica global. Desde
+la telefonía móvil de última generación (5G/6G) y las redes Wi-Fi de
+alta velocidad hasta la transmisión satelital y los sistemas de radar
+de apertura sintética (SAR), la capacidad de transmitir información de
+manera fiable sin soporte físico ha revolucionado la interacción
+humana y el acceso masivo a datos. No obstante, estos sistemas operan
+en un entorno físico intrínsecamente hostil: el canal de transmisión
+es ruidoso, sujeto a interferencias multi-trayecto, atenuaciones por
+distancia y distorsiones de fase que comprometen la integridad de la
+señal. 
 
-Para mitigar estos efectos y garantizar la eficiencia espectral, las señales analógicas se digitalizan, transformándose en secuencias discretas de información. Esta abstracción permite aplicar el vasto arsenal del álgebra abstracta y la combinatoria para el diseño de códigos. En este contexto, la teoría de secuencias binarias con propiedades óptimas de autocorrelación y espectro plano es un área de investigación crítica y activa. Entre estas, los \emph{Pares de Legendre} destacan por su estrecha vinculación con las matrices de Hadamard y su aplicabilidad directa en la inmunidad al ruido en sistemas de radar y comunicaciones seguras.
+Adicionalmente, el espectro electromagnético es un recurso finito y
+altamente disputado, hay bandas de frecuencia congestionadas y
+reguladas, como se puede ver en  \href{https://avance.digital.gob.es/espectro/Documents/Poster-CNAF.pdf}{este gráfico}, lo que obliga a los ingenieros a diseñar señales que
+maximicen la eficiencia espectral. 
+Para mitigar estos efectos, las
+señales analógicas se digitalizan, transformándose en secuencias
+discretas de información. Cada secuencia se transmite en «slots» de
+tiempo o en bandas de frecuencia específicas, y su estructura interna
+determina la capacidad del sistema para resistir el ruido, evitar
+interferencias y mantener la confidencialidad.
+Sabiendo el periodo de la secuencia, $\ell$\footnote{La notación es
+  estándar y representa la longitud}, la señal se modela como un
+vector con $\ell$ de bits, donde cada posición representa un estado de la señal
+(por ejemplo, presencia o ausencia de una portadora). La distancia
+entre dos señales se puede medir mediante el producto escalar, lo que
+a su vez se relaciona con la función de autocorrelación de la
+secuencia. La función de autocorrelación periódica son los diferentes
+valores del producto escalar al desplazar la secuencia sobre sí
+misma.
+
+
+Esta abstracción permite aplicar el vasto arsenal del álgebra
+abstracta y la combinatoria para el diseño de códigos.
+En este contexto, la teoría de secuencias binarias con propiedades óptimas de
+autocorrelación y espectro plano es un área de investigación crítica y
+activa. Entre estas, los \emph{Pares de Legendre} destacan por su
+estrecha vinculación con las matrices de Hadamard y su aplicabilidad
+directa en la inmunidad al ruido en sistemas de radar y comunicaciones
+seguras.
+
+
+\section{Antecedentes históricos y relevancia actual}
+
+
+\Comentario{Añade referencias históricas sobre las matrices de Hadamard}
+
+El estudio de secuencias con autocorrelación ideal tiene sus raíces en
+los problemas de diseño combinatorio del siglo XX. Las primeras
+referencias sobre las matrices de Hadamard aparecen en 1867, cuando el
+matemático J. J. Sylvester introdujo la construcción recursiva de
+estas matrices y que maximizaban el determinante de matrices con
+entradas $\pm 1$.
+Hadamard posteriormente generalizó esta idea en 1893, estableciendo el
+límite superior para el determinante de matrices binarias y
+demostrando que si teniamos una matriz $H$ de orden $n$ con entradas
+en $\{-1, 1\}$, entonces $|\mathrm{det} H |^{2}$ era $n^{n}$ si y solo si $H$ era una matriz de Hadamard, es decir, si se cumplía la siguiente relación de ortogonalidad:
+\begin{equation}
+  \label{eq:hadamard}
+  H H^T = n I_n,
+\end{equation}
+donde $I_n$ es la matriz identidad de orden $n$.
+Hadamard conjeturó que estas matrices solo existen para órdenes $n$
+que son múltiplos de 4, lo que se conoce como la Conjetura de
+Hadamard, un problema abierto hasta el día de hoy y  el primer valor que
+no se sabe si existe es $n=668$.
+
+Una forma de construir matrices de Hadamard de orden $2\ell + 2$ es a
+través de la construcción de dos circulantes (\emph{two-circulant core
+  construction}), que se basa en encontrar un par de secuencias
+binarias $A$ y $B$ de longitud $\ell$.
+\begin{eqnarray*}
+  A &= (a_{0}, a_{1}, \dots, a_{\ell-1}), \quad a_i \in \{-1, 1\} \\
+  B &= (b_{0}, b_{1}, \dots, b_{\ell-1}), \quad b_i \in \{-1, 1\}\\
+\end{eqnarray*}
+Ahora definimos las matrices circulates $\seq{A}, \seq{B}$ de la
+siguiente forma:
+\begin{equation*}
+  \begin{aligned}
+    \seq{A} &=
+    \begin{bmatrix}
+      a_0 & a_{\ell-1} & \dots & a_1 \\
+      a_1 & a_0 & \dots & a_2 \\
+      \vdots & \vdots & \ddots & \vdots \\
+      a_{\ell-1} & a_{\ell-2} & \dots & a_0
+    \end{bmatrix}
+  \end{aligned}
+  \hspace{2cm} % Espaciado horizontal entre las matrices
+  \begin{aligned}
+    \seq{B} &=
+    \begin{bmatrix}
+      b_0 & b_{\ell-1} & \dots & b_1 \\
+      b_1 & b_0 & \dots & b_2 \\
+      \vdots & \vdots & \ddots & \vdots \\
+      b_{\ell-1} & b_{\ell-2} & \dots & b_0
+    \end{bmatrix}
+  \end{aligned}
+\end{equation*}
+Ahora utilizamos la comilla simple para denotar la matriz
+transpuesta, es decir, $\seq{A}'$ es la transpuesta de $\seq{A}$ y
+$\seq{B}'$ es la transpuesta de $\seq{B}$. La matriz de Hadamard se construye
+a partir de estas secuencias como sigue:
+  \[
+  H = \begin{bmatrix}
+    -1 & -1 & \mathbf{1} & \mathbf{1} \\
+    -1 & 1 & \mathbf{1} & -\mathbf{1} \\    
+    \mathbf{1}' & \mathbf{1}' & \seq{B} & \seq{A} \\
+    \mathbf{1}' & -\mathbf{1}' & \seq{A}'  & -\seq{B}^{'} \\
+    \end{bmatrix}
+  \]
+Con esta construcción, la matriz $H$ es de orden $2\ell + 2$ y es una
+matriz de
+Hadamard si y solo si las secuencias $A$ y $B$ cumplen la siguiente
+condición:
+\[
+ \PAF_{A}(k) + PAF_{B}(k) =   \sum_{i=0}^{\ell-1} (a_i a_{i+k}) +\sum_{i=0}^{\ell-1}( b_i b_{i+k}) = -2, \quad \forall k \neq 0 \pmod \ell,
+\]
+donde los índices se toman módulo $\ell$. A estas secuencias $A$ y $B$
+que cumplen esta condición se les denomina \emph{Pares de Legendre}.
+\Comentario{Podrías añadir aquí una breve explicación de qué es la
+  función de autocorrelación periódica (PAF), cuanto es el valor
+  máximo y comprueba los cálculos de la tabla del ejemplo.}
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Ejemplo de Pares de Legendre]
+  Tomemos las secuencias
+  $(1, 1, 1, -1, 1, -1, 1, -1, -1), (1, 1, 1, 1, -1, -1, 1, -1, -1)$, calculemos la suma de sus
+  autocorrelaciones periódicas, obtenemos:
+  \begin{center}
+        \begin{tabular}{c|c|c}
+          $k$ & $\text{PAF}_A(k)$ & $\text{PAF}_B(k)$ \\
+          \hline
+          0 & 9 & 9 \\
+          1 & -3 & 1 \\
+          2 & 1 & -3 \\
+          3 & -3 & 1 \\
+          4 & 1 & -3 \\
+          5 & 1 & -3 \\
+          6 & -3 & 1 \\
+          7 & 1 & -3 \\
+          8 & -3 & 1 \\
+        \end{tabular}
+      \end{center}
+
+   La matriz de Hadamard de orden $2\ell + 2 = 20$ se construye y no se
+   incluye por razones de espacio.  
+\end{tcolorbox}
+
+
+Aunque el nombre ``Pares de Legendre'' evoca al matemático Adrien-Marie Legendre debido
+al uso de los símbolos de residuos cuadráticos, su definición moderna
+en el contexto de procesamiento de señal es posterior. 
+
+Históricamente, la investigación se centró en encontrar una única
+secuencia con autocorrelación ideal, lo que llevó a la búsqueda de
+secuencias pseudoaleatorias de Barker, que solo existen para longitudes muy cortas
+($\ell \leq 13$). La inexistencia para longitudes impares mayores que 13 motivó la búsqueda
+de \emph{pares} de secuencias complementarias. Investigadores como
+\cite{seberry1992hadamard} formalizaron la conexión entre estos pares
+y las Matrices de Hadamard. 
+
+Recientemente, el trabajo de \cite{kotsireas2021legendre} revitalizó
+el campo aplicando optimización computacional para longitudes $\ell$
+divisibles por 3, ya que el primer caso desconocido de matrices de
+Hadamard (n=668) corresponde a encontrar un par de longitud
+$\ell=9\cdot31=333$. Este trabajo mejora los resultados computacionales y ha
+hallado una modernización de las herramientas de búsqueda mediante
+paralelismo masivo y generación  automática de código.
+
+
+\section{Aplicaciones y logros de los pares de Legendre}
+
+La relevancia de estas secuencias trasciende la teoría matemática pura; poseen aplicaciones prácticas directas en ingeniería moderna.
+
+\subsection{Sistemas de radar y sonar}
+En el diseño de ondas para radar, el objetivo fundamental es lograr una Función de Ambigüedad que se aproxime a un impulso ideal. La capacidad de discernir el eco de un objetivo frente al ruido depende de la Función de Autocorrelación Periódica (PAF) de la señal emitida.
+
+Si transmitimos una secuencia $S$, buscamos que el lóbulo principal en el retardo $\tau = 0$ contenga toda la energía, y que los lóbulos laterales (\emph{sidelobes}) sean nulos para evitar objetivos fantasma. Los pares de Legendre son valiosos porque, al transmitirse en esquemas ortogonales complementarios, la suma de sus interferencias se cancela casi perfectamente:
+$$ \text{PAF}_A(\tau) + \text{PAF}_B(\tau) = \begin{cases} 2\ell, & \tau \equiv 0 \pmod \ell \\ -2, & \tau \not\equiv 0 \pmod \ell \end{cases} $$
+Esta propiedad de autocorrelación  maximiza la Relación Señal a Ruido
+(SNR), mejorando la precisión  del radar y mitigando las interferencias de trayectos múltiples (\emph{multipath fading}) \cite{budivsin1991efficient}.
+
+\begin{figure}[htb!]
+    \centering
+    \includegraphics[width=0.85\linewidth]{radar_multipath.png}
+    \caption{Visualización del fenómeno de desvanecimiento por trayectos múltiples (\emph{multipath fading}). La capacidad del receptor para aislar el pulso directo frente a los ecos parásitos depende críticamente de la autocorrelación de secuencias ortogonales como los pares de Legendre.}
+    \label{fig:multipath}
+\end{figure}
+
+\subsection{Diseño de experimentos y matrices ortogonales}
+En estadística experimental, las matrices ortogonales se utilizan para
+estudiar el efecto de múltiples variables de forma simultánea,
+garantizando que la varianza sea mínima y los efectos
+independientes. La estructura óptima para esto es la Matriz de
+Hadamard, definida en la ecuación \eqref{eq:hadamard}.
+\Comentario{Hay aquí repetición de cosas, pero hay que explicar mejor
+  porque las matrices ortonogonales son importantes en el diseño de
+  experimentos.}
+
+\subsection{Criptografía y secuencias pseudoaleatorias}
+En sistemas de telecomunicaciones seguros, como el espectro ensanchado (Spread Spectrum) y los cifradores de flujo (\emph{stream ciphers}), es crucial que la señal portadora sea estadísticamente indistinguible del ruido blanco gaussiano para evitar la interceptación y el criptoanálisis.
+
+Por el Teorema de Parseval, la energía total de una señal en el
+dominio del tiempo es igual a su energía en el dominio de la
+frecuencia.
+\Comentario{Podrías añadir aquí una breve explicación de qué es la Densidad
+  Espectral de Potencia (PSD) y cómo se relaciona con la PAF, }
+
+Un par de Legendre asegura una Densidad Espectral de Potencia (PSD) sumada estrictamente constante para todo componente frecuencial $k$:
+$$ \text{PSD}_A(k) + \text{PSD}_B(k) = 2\ell + 2 $$
+Esta uniformidad espectral (espectro plano) dota a las secuencias de Legendre de un alto nivel de entropía, baja predictibilidad lineal y un comportamiento cuasi-aleatorio perfecto, haciéndolas ideales como firmas digitales u ondas portadoras inmunes a ataques por análisis de frecuencia \cite{damgaard1988randomness}.
+
+\subsection{Sistemas de posicionamiento satelital (GPS) y localización UWB}
+El auge de los sistemas de localización, tanto en exteriores (sistemas
+satelitales GNSS/GPS) como en interiores mediante señales de radio de
+impulso ultraancho (IR-UWB), exige una precisión submétrica en el
+cálculo del Tiempo de Llegada (ToA) y la Diferencia de Tiempo de
+Llegada (TDoA).
+\Comentario{Antes de esto tendrías que explicar brevemente qué es el
+  ToA y el TDoA, y por qué es tan importante la precisión en estos
+  sistemas. Como se calcula la distancia a partir del ToA y TDoA, y cómo el ruido afecta a esta}
+
+En estos entornos industriales o urbanos, las señales electromagnéticas se enfrentan a un canal hostil caracterizado por el desvanecimiento por trayectos múltiples (\emph{multipath fading}), donde los ecos de la señal rebotan en obstáculos y confunden al receptor \cite{cantabria2021positioning}.
+
+Para mitigar este efecto y aislar la señal directa real, los sistemas
+modernos rechazan las modulaciones clásicas en favor del Acceso
+Múltiple por División de Código (CDMA)
+
+
+o modulaciones por posición de pulso combinadas con saltos temporales (TH-PPM). Es aquí donde los Pares de Legendre demuestran una utilidad excepcional. 
+
+Al emplear estas secuencias combinatorias para modular los pulsos, se aprovecha su propiedad de autocorrelación casi ideal. El receptor, que conoce la secuencia de antemano, realiza una correlación cruzada con la señal entrante. Gracias a la estructura de Legendre, el pico de correlación en el retardo exacto $\tau = 0$ es agudo, mientras que los ecos desplazados caen en lóbulos laterales nulos o mínimos. Esto permite identificar el instante exacto del impacto del pulso principal con precisión de picosegundos.
+
+Adicionalmente, el uso de familias de secuencias pseudoaleatorias derivadas de Legendre asegura una baja correlación cruzada entre distintos transmisores. Esto soluciona dos problemas críticos del mercado actual del posicionamiento: 
+\begin{itemize}
+    \item \textbf{Escalabilidad:} Permite que decenas de etiquetas móviles (MUs) y puntos de acceso (APs) compartan el mismo ancho de banda sin colisiones destructivas.
+    \item \textbf{Seguridad de capa física:} Previene ataques activos de interferencia (\emph{jamming}) y suplantación (\emph{spoofing} o ataques \emph{Early-Detection/Late-Commit}). Al ser el espectro de la señal estadísticamente indistinguible del ruido blanco para un interceptor que desconoce la secuencia, el atacante no puede inyectar energía maliciosa de manera coherente para alterar la estimación de distancia.
+    \end{itemize}
+
+    \Comentario{He puesto esta sección aquí porque es una aplicación
+      directa de las matrices de Hadamard. Pero ahora creo que hay
+      notación que se repite y no se ponen ejemplos concretos. Así
+      queda muy abstracto y difícil de entender. Podrías poner un
+      ejemplo concreto de cómo se construyen las matrices de Sylvester.}
+\subsection{Análisis de Funciones Booleanas mediante la Transformada de Walsh-Hadamard}
+En el ámbito de la criptografía, los Pares de Legendre y las secuencias de espectro plano están íntimamente ligados a la robustez de las funciones booleanas empleadas en S-boxes (para cifradores de bloque) y en combinadores de registros de desplazamiento (para cifradores de flujo). Una función booleana $f: \mathbb{F}_2^n \to \mathbb{F}_2$ debe exhibir la máxima no linealidad posible para frustrar el criptoanálisis lineal y diferencial.
+
+La herramienta matemática estándar para desnudar y cuantificar cualquier linealidad oculta en estas funciones es la Transformada de Walsh-Hadamard (WHT). Conceptualmente, la WHT es el caso especial de la Transformada Discreta de Fourier sobre el grupo abeliano finito $\mathbb{F}_2^n$.
+
+Para calcular el espectro de Walsh de una función, se multiplica su vector de verdad polarizado por una Matriz de Hadamard de orden $2^n$. Sin embargo, es un requisito matemático estricto que dicha matriz se genere exclusivamente mediante la \textbf{construcción de Sylvester}. Esta matriz se define de forma recursiva a través del producto tensorial de Kronecker:
+
+$$ H_2 = \begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \quad H_{2^n} = H_2 \otimes H_{2^{n-1}} $$
+
+La exigencia de usar la matriz de Sylvester radica en que su estructura indexada refleja perfectamente el espacio vectorial $\mathbb{F}_2^n$. Si se utilizara cualquier otra matriz de Hadamard isomórfica (generada por métodos de Paley, Williamson o secuencias aleatorias), el espectro resultante mostraría comportamientos no aleatorios y sesgos estructurales que destruirían el análisis, ya que las filas de la matriz no se corresponderían con las formas lineales canónicas del espacio de entrada.
+
+Al aplicar la Transformada de Walsh-Hadamard de Sylvester, obtenemos un perfil que mide la correlación exacta entre nuestra función booleana y todas las funciones afines posibles. Por el Teorema de Parseval, la suma de los cuadrados de estos coeficientes de Walsh es constante. Cuando una función minimiza esta correlación de manera uniforme, su espectro de Walsh es completamente plano, tomando únicamente los valores límite $\pm 2^{n/2}$. A estas funciones de máxima no linealidad se les denomina \emph{funciones Bent} \cite{rothaus1976bent, pommerening2014fourier}.
+
+La búsqueda de Pares de Legendre está profundamente anclada a este fenómeno algebraico. La planitud espectral en el dominio booleano (funciones Bent) es el análogo directo de la condición de Densidad Espectral de Potencia (PSD) constante que nuestro software verifica algorítmicamente. Encontrar soluciones óptimas en la teoría de Legendre proporciona vectores base directos para sintetizar funciones con inmunidad teórica máxima frente al criptoanálisis.
 
 \section{El reto computacional y la combinatoria explosiva}
 
-La búsqueda de pares de Legendre es, fundamentalmente, un problema de optimización combinatoria en un espacio de búsqueda exponencial. Dado un par de secuencias binarias $(A, B)$ de longitud $\ell$, donde cada elemento $a_i, b_i \in \{-1, 1\}$, el espacio total de combinaciones posibles viene dado por $2^\ell \times 2^\ell = 2^{2\ell}$.
+La búsqueda de pares de Legendre es, fundamentalmente, un problema de
+optimización combinatoria en un espacio de búsqueda exponencial. Dado
+un par de secuencias binarias $(A, B)$ de longitud $\ell$, donde cada
+elemento $a_i, b_i \in \{-1, 1\}$, el espacio total de combinaciones
+posibles viene dado por $2^\ell \times 2^\ell = 2^{2\ell}$. 
 
-Para una longitud objetivo moderada como $\ell=75$, esto implica un espacio de $2^{150}$ candidatos potenciales. Para poner esta cifra en perspectiva, $2^{150} \approx 1.4 \times 10^{45}$, un número astronómico que supera con creces la capacidad de cómputo acumulada de toda la humanidad. Incluso utilizando el superordenador más potente del mundo actual (capaz de realizar exaflops, $10^{18}$ operaciones por segundo), la verificación por fuerza bruta tardaría una cantidad de tiempo inabarcable, superior a la edad del universo.
+Para una longitud objetivo moderada como $\ell=75$, esto implica un
+espacio de $2^{150}$ candidatos potenciales. Para poner esta cifra en
+perspectiva, $2^{150} \approx 1.4 \times 10^{45}$, un número astronómico que
+supera con creces la capacidad de cómputo acumulada de toda la
+humanidad. Incluso utilizando el superordenador más potente del mundo
+actual (capaz de realizar exaflops, $10^{18}$ operaciones por
+segundo), la verificación por fuerza bruta tardaría una cantidad de
+tiempo inabarcable, superior a la edad del universo. 
+\Comentario{Podrías citar aquí los ordenadores más potentes del mundo
+  y sus capacidades de cómputo para dar una idea concreta.}
 
-Para comprender la magnitud de este espacio, podemos recurrir a una analogía: si cada candidato generado fuera evaluado en el tiempo que tarda la luz en recorrer un átomo, el proceso seguiría tardando billones de años. En problemas con complejidad temporal exponencial, $\mathcal{O}(2^N)$, el paradigma tradicional de \textit{escalado vertical} (adquirir procesadores más rápidos) resulta fútil. Por ejemplo, duplicar la potencia computacional mundial solo permitiría resolver una secuencia de longitud $\ell + 1$ en el mismo tiempo que ahora toma resolver la longitud $\ell$. Por lo tanto, el obstáculo no es meramente tecnológico, sino fundamentalmente algorítmico, lo que justifica y exige la reingeniería y optimización profunda propuesta en este trabajo.
+Para comprender la magnitud de este espacio, podemos recurrir a una
+analogía: si cada candidato generado fuera evaluado en el tiempo que
+tarda la luz en recorrer un átomo, el proceso seguiría tardando
+billones de años. En problemas con complejidad temporal exponencial,
+$\mathcal{O}(2^N)$, el paradigma tradicional de \textit{escalado vertical}
+(adquirir procesadores más rápidos) resulta fútil. Por ejemplo,
+duplicar la potencia computacional mundial solo permitiría resolver
+una secuencia de longitud $\ell + 1$ en el mismo tiempo que ahora toma
+resolver la longitud $\ell$. Por lo tanto, el obstáculo no es meramente
+tecnológico, sino fundamentalmente algorítmico, lo que justifica y
+exige la reingeniería y optimización profunda propuesta en este
+trabajo.
+
+
 
 \subsection{Fundamentos Matemáticos del Método de Compresión}
 
-Para abordar este problema intratable, es imperativo recurrir a métodos algebraicos que reduzcan la dimensionalidad del espacio. El \emph{método de compresión} (compression method) es la técnica angular de este proyecto. Esta técnica proyecta las secuencias originales de longitud $\ell$ sobre un subgrupo de tamaño menor dividiendo la longitud por un factor $d$ (en este trabajo, $d=3$, dado que nos centramos en longitudes $\ell \equiv 0 \pmod 3$).
+Para abordar este problema intratable, es imperativo recurrir a
+métodos algebraicos que reduzcan la dimensionalidad del espacio. El
+\emph{método de compresión} (compression method) es una de las
+técnicas que se utilizan en este proyecto. Esta técnica proyecta las secuencias originales de
+longitud $\ell$ sobre un subgrupo de tamaño menor dividiendo la longitud
+por un factor $d$ (en este trabajo, $d=3$, dado que nos centramos en
+longitudes $\ell \equiv 0 \pmod 3$). 
 
-Sea $A = (a_0, a_1, \dots, a_{\ell-1})$ una secuencia binaria donde cada $a_i \in \{+1, -1\}$. Definimos la secuencia comprimida $A^{(d)}$ de longitud $m = \ell / d$ mediante la suma de los elementos de la secuencia original separados por un salto de $m$ posiciones. Formalmente, el $i$-ésimo elemento de la secuencia comprimida se calcula como:
+Sea $A = (a_0, a_1, \dots, a_{\ell-1})$ una secuencia binaria donde cada
+$a_i \in \{+1, -1\}$. Definimos  la secuencia comprimida $A^{(d)}$ de longitud $m = \ell / d$ mediante la suma de los elementos de la secuencia original separados por un salto de $m$ posiciones. Formalmente, el $i$-ésimo elemento de la secuencia comprimida se calcula como:
 
 $$A^{(d)}_i = \sum_{j=0}^{d-1} a_{i + j \cdot m}, \quad \text{para } i = 0, 1, \dots, m-1$$
 
-Dado que estamos sumando $d=3$ elementos cuyos valores solo pueden ser $+1$ o $-1$, el alfabeto de la nueva secuencia comprimida deja de ser estrictamente binario. Los posibles valores resultantes para cada $A^{(3)}_i$ pertenecen al conjunto finito $\{-3, -1, +1, +3\}$.
+Dado que estamos sumando $d=3$ elementos cuyos valores solo pueden ser
+$+1$ o $-1$, el alfabeto de la nueva secuencia comprimida deja de ser
+estrictamente binario. Los posibles valores resultantes para cada
+$A^{(3)}_i$ pertenecen al conjunto finito $\{-3, -1, +1, +3\}$. 
 
-Este mapeo reduce drásticamente el espacio de búsqueda. Si determinamos que no existen secuencias comprimidas en este espacio de longitud $m$ que cumplan las condiciones necesarias, se garantiza matemáticamente que tampoco existirán soluciones en el espacio original de longitud $\ell$.
+Este mapeo reduce drásticamente el espacio de búsqueda. Si
+determinamos que no existen secuencias comprimidas en este espacio de
+longitud $m$ que cumplan las condiciones necesarias, se garantiza
+matemáticamente que tampoco existirán soluciones en el espacio
+original de longitud $\ell$. 
 
 \begin{figure}[htb!]
     \centering
@@ -112,68 +409,12 @@ Esta compresión tiene una propiedad espectral fundamental: la densidad espectra
 
 Una vez que el algoritmo detecta un par comprimido $(A^{(3)}, B^{(3)})$ cuya PSD en el dominio frecuencial es compatible con la constante objetivo $2\ell + 2 = 152$, sabemos que es un candidato viable, y procedemos a su descompresión para verificar el Par de Legendre exacto.
 
-\section{Historia de los pares de Legendre}
-
-El estudio de secuencias con autocorrelación ideal tiene sus raíces en los problemas de diseño combinatorio del siglo XX. Aunque el nombre ''Pares de Legendre'' evoca al matemático Adrien-Marie Legendre debido al uso de los símbolos de residuos cuadráticos, su definición moderna en el contexto de procesamiento de señal es posterior.
-
-Históricamente, la investigación se centró en encontrar secuencias únicas (como las secuencias de Barker), pero la demostración de su inexistencia para longitudes impares mayores que 13 motivó la búsqueda de \emph{pares} de secuencias complementarias. Investigadores como \cite{seberry1992hadamard} formalizaron la conexión entre estos pares y las Matrices de Hadamard, un problema abierto desde hace más de un siglo.
-
-Recientemente, el trabajo de  \cite{kotsireas2021legendre} revitalizó el campo aplicando optimización computacional para longitudes $\ell$ divisibles por 3. Este TFG toma el relevo de dichos trabajos, proponiendo una modernización de las herramientas de búsqueda mediante paralelismo masivo y generación automática de código.
-
-\section{Aplicaciones y logros de los pares de Legendre}
-
-La relevancia de estas secuencias trasciende la teoría matemática pura; poseen aplicaciones prácticas directas en ingeniería moderna.
-
-\subsection{Sistemas de radar y sonar}
-En el diseño de ondas para radar, el objetivo fundamental es lograr una Función de Ambigüedad que se aproxime a un impulso ideal. La capacidad de discernir el eco de un objetivo frente al ruido depende de la Función de Autocorrelación Periódica (PAF) de la señal emitida.
-\end{document}
-Si transmitimos una secuencia $S$, buscamos que el lóbulo principal en el retardo $\tau = 0$ contenga toda la energía, y que los lóbulos laterales (\emph{sidelobes}) sean nulos para evitar objetivos fantasma. Los pares de Legendre son valiosos porque, al transmitirse en esquemas ortogonales complementarios, la suma de sus interferencias se cancela casi perfectamente:
-$$ \text{PAF}_A(\tau) + \text{PAF}_B(\tau) = \begin{cases} 2\ell, & \tau \equiv 0 \pmod \ell \\ -2, & \tau \not\equiv 0 \pmod \ell \end{cases} $$
-Esta propiedad de autocorrelación casi impulsiva maximiza la Relación Señal a Ruido (SNR), mejorando radicalmente la resolución espacial del radar y mitigando las interferencias de trayectos múltiples (\emph{multipath fading}) \cite{budivsin1991efficient}.
-
-\begin{figure}[htb!]
-    \centering
-    \includegraphics[width=0.85\linewidth]{radar_multipath.png}
-    \caption{Visualización del fenómeno de desvanecimiento por trayectos múltiples (\emph{multipath fading}). La capacidad del receptor para aislar el pulso directo frente a los ecos parásitos depende críticamente de la autocorrelación de secuencias ortogonales como los pares de Legendre.}
-    \label{fig:multipath}
-\end{figure}
-
-\subsection{Diseño de experimentos y matrices ortogonales}
-En estadística experimental, las matrices ortogonales se utilizan para estudiar el efecto de múltiples variables de forma simultánea, garantizando que la varianza sea mínima y los efectos independientes. La estructura óptima para esto es la Matriz de Hadamard, una matriz cuadrada $H$ de orden $n$ con entradas en $\{-1, 1\}$ que satisface:
-$$ H H^T = n I_n $$
-donde $I_n$ es la matriz identidad. La construcción directa de estas matrices es un problema matemático abierto. Sin embargo, si existe un Par de Legendre $(A, B)$ de longitud $\ell$, se puede construir algebraicamente una Matriz de Hadamard de orden $n = 2\ell + 2$ utilizando la construcción de dos circulantes (\emph{two-circulant core construction}). Se forman matrices circulantes $C_A$ y $C_B$ a partir de los vectores $A$ y $B$, insertándolas en un bloque maestro estructurado que garantiza la ortogonalidad estricta entre todas las filas y columnas resultantes \cite{seberry1992hadamard}.
-
-\begin{figure}[htb!]
-    \centering
-    \includegraphics[width=0.6\linewidth]{hadamard_matrix.png}
-    \caption{Representación gráfica de la estructura ortogonal de una matriz de Hadamard. El mapeo de secuencias de Legendre permite construir el núcleo (\emph{core}) de estas matrices para órdenes superiores.}
-    \label{fig:hadamard}
-\end{figure}
-
-\subsection{Criptografía y secuencias pseudoaleatorias}
-En sistemas de telecomunicaciones seguros, como el espectro ensanchado (Spread Spectrum) y los cifradores de flujo (\emph{stream ciphers}), es crucial que la señal portadora sea estadísticamente indistinguible del ruido blanco gaussiano para evitar la interceptación y el criptoanálisis.
-
-Por el Teorema de Parseval, la energía total de una señal en el dominio del tiempo es igual a su energía en el dominio de la frecuencia. Un par de Legendre asegura una Densidad Espectral de Potencia (PSD) sumada estrictamente constante para todo componente frecuencial $k$:
-$$ \text{PSD}_A(k) + \text{PSD}_B(k) = c $$
-Esta uniformidad espectral (espectro plano) dota a las secuencias de Legendre de un alto nivel de entropía, baja predictibilidad lineal y un comportamiento cuasi-aleatorio perfecto, haciéndolas ideales como firmas digitales u ondas portadoras inmunes a ataques por análisis de frecuencia \cite{damgaard1988randomness}.
-
-\subsection{Sistemas de posicionamiento satelital (GPS) y localización UWB}
-El auge de los sistemas de localización, tanto en exteriores (sistemas satelitales GNSS/GPS) como en interiores mediante señales de radio de impulso ultraancho (IR-UWB), exige una precisión submétrica en el cálculo del Tiempo de Llegada (ToA) y la Diferencia de Tiempo de Llegada (TDoA). En estos entornos industriales o urbanos, las señales electromagnéticas se enfrentan a un canal hostil caracterizado por el desvanecimiento por trayectos múltiples (\emph{multipath fading}), donde los ecos de la señal rebotan en obstáculos y confunden al receptor \cite{cantabria2021positioning}.
-
-Para mitigar este efecto y aislar la señal directa real, los sistemas modernos rechazan las modulaciones clásicas en favor del Acceso Múltiple por División de Código (CDMA) o modulaciones por posición de pulso combinadas con saltos temporales (TH-PPM). Es aquí donde los Pares de Legendre demuestran una utilidad excepcional. 
-
-Al emplear estas secuencias combinatorias para modular los pulsos, se aprovecha su propiedad de autocorrelación casi ideal. El receptor, que conoce la secuencia de antemano, realiza una correlación cruzada con la señal entrante. Gracias a la estructura de Legendre, el pico de correlación en el retardo exacto $\tau = 0$ es agudo y destacadísimo, mientras que los ecos desplazados caen en lóbulos laterales nulos o mínimos. Esto permite identificar el instante exacto del impacto del pulso principal con precisión de picosegundos.
-
-Adicionalmente, el uso de familias de secuencias pseudoaleatorias derivadas de Legendre asegura una baja correlación cruzada entre distintos transmisores. Esto soluciona dos problemas críticos del mercado actual del posicionamiento: 
-\begin{itemize}
-    \item \textbf{Escalabilidad:} Permite que decenas de etiquetas móviles (MUs) y puntos de acceso (APs) compartan el mismo ancho de banda sin colisiones destructivas.
-    \item \textbf{Seguridad de capa física:} Previene ataques activos de interferencia (\emph{jamming}) y suplantación (\emph{spoofing} o ataques \emph{Early-Detection/Late-Commit}). Al ser el espectro de la señal estadísticamente indistinguible del ruido blanco para un interceptor que desconoce la secuencia, el atacante no puede inyectar energía maliciosa de manera coherente para alterar la estimación de distancia.
-\end{itemize}
 
 \section{Propiedades matemáticas fundamentales}
 
 Para comprender la lógica implementada en el código desarrollado, es necesario formalizar las propiedades que nuestro algoritmo verifica. Un par de Legendre de longitud $\ell$ está formado por dos secuencias $A = \{a_i\}$ y $B = \{b_i\}$ con valores en $\{-1, +1\}$.
-
+\Comentario{Aquí se repite información, que ya se ha dado en otro
+  sitio. La definición de estás secuencias ya esta dada en la sección de antecedentes, pero aquí se puede profundizar un poco más en la explicación de cada propiedad.}
 \subsection{Función de Autocorrelación Periódica (PAF)}
 La condición en el dominio del tiempo exige que la suma de las autocorrelaciones de A y B sea una función delta (cero en todo punto salvo en el origen):
 \[
@@ -181,33 +422,22 @@ La condición en el dominio del tiempo exige que la suma de las autocorrelacione
 \]
 
 \subsection{Densidad Espectral de Potencia (PSD)}
-Verificar la PAF tiene una complejidad computacional de $O(\ell^2)$. Para acelerar el cálculo, trasladamos el problema al dominio de la frecuencia usando la Transformada Discreta de Fourier (DFT). La condición equivalente, y la que nuestro software verifica, es que la suma de las energías espectrales sea constante:
+Verificar la PAF tiene una complejidad computacional de $O(\ell^2)$. Para
+acelerar el cálculo, trasladamos el problema al dominio de la
+frecuencia usando la Transformada Discreta de Fourier
+(DFT). La condición equivalente, y la que nuestro software verifica, es que la suma de las energías espectrales sea constante:
 \[
 |\text{DFT}_A(k)|^2 + |\text{DFT}_B(k)|^2 = 2\ell + 2, \quad \forall k
 \]
 Esta propiedad permite una verificación en tiempo $O(\ell)$ una vez calculada la DFT, siendo mucho más eficiente para el filtrado masivo de millones de candidatos por segundo.
 
 
-
+\Comentario{No defines que es el dominio frecuencia ni la DFT.}
 La formulación en el dominio frecuencial establece que un par es válido si y solo si la suma de sus densidades espectrales es exactamente igual a la constante $2\ell + 2$ para cualquier frecuencia discreta $k$. Por ende, cualquier mínima desviación de este valor en una sola frecuencia descarta inmediatamente al candidato. Dado que esta evaluación debe realizarse para cada una de las trillones de combinaciones generadas, el cálculo repetitivo de las multiplicaciones complejas de la DFT se erige como el principal ''cuello de botella'' computacional del sistema. Optimizar el flujo de instrucciones de esta métrica es el objetivo primordial de la metaprogramación desarrollada.
 
-\subsection{Análisis de Funciones Booleanas mediante la Transformada de Walsh-Hadamard}
-En el ámbito de la criptografía, los Pares de Legendre y las secuencias de espectro plano están íntimamente ligados a la robustez de las funciones booleanas empleadas en S-boxes (para cifradores de bloque) y en combinadores de registros de desplazamiento (para cifradores de flujo). Una función booleana $f: \mathbb{F}_2^n \to \mathbb{F}_2$ debe exhibir la máxima no linealidad posible para frustrar el criptoanálisis lineal y diferencial.
-
-La herramienta matemática estándar para desnudar y cuantificar cualquier linealidad oculta en estas funciones es la Transformada de Walsh-Hadamard (WHT). Conceptualmente, la WHT es el caso especial de la Transformada Discreta de Fourier sobre el grupo abeliano finito $\mathbb{F}_2^n$.
-
-Para calcular el espectro de Walsh de una función, se multiplica su vector de verdad polarizado por una Matriz de Hadamard de orden $2^n$. Sin embargo, es un requisito matemático estricto que dicha matriz se genere exclusivamente mediante la \textbf{construcción de Sylvester}. Esta matriz se define de forma recursiva a través del producto tensorial de Kronecker:
-
-$$ H_2 = \begin{pmatrix} 1 & 1 \\ 1 & -1 \end{pmatrix}, \quad H_{2^n} = H_2 \otimes H_{2^{n-1}} $$
-
-La exigencia de usar la matriz de Sylvester radica en que su estructura indexada refleja perfectamente el espacio vectorial $\mathbb{F}_2^n$. Si se utilizara cualquier otra matriz de Hadamard isomórfica (generada por métodos de Paley, Williamson o secuencias aleatorias), el espectro resultante mostraría comportamientos no aleatorios y sesgos estructurales que destruirían el análisis, ya que las filas de la matriz no se corresponderían con las formas lineales canónicas del espacio de entrada.
-
-Al aplicar la Transformada de Walsh-Hadamard de Sylvester, obtenemos un perfil que mide la correlación exacta entre nuestra función booleana y todas las funciones afines posibles. Por el Teorema de Parseval, la suma de los cuadrados de estos coeficientes de Walsh es constante. Cuando una función minimiza esta correlación de manera uniforme, su espectro de Walsh es completamente plano, tomando únicamente los valores límite $\pm 2^{n/2}$. A estas funciones de máxima no linealidad se les denomina \emph{funciones Bent} \cite{rothaus1976bent, pommerening2014fourier}.
-
-La búsqueda de Pares de Legendre está profundamente anclada a este fenómeno algebraico. La planitud espectral en el dominio booleano (funciones Bent) es el análogo directo de la condición de Densidad Espectral de Potencia (PSD) constante que nuestro software verifica algorítmicamente. Encontrar soluciones óptimas en la teoría de Legendre proporciona vectores base directos para sintetizar funciones con inmunidad teórica máxima frente al criptoanálisis.
 
 
-\section{Metodología y Herramientas de Desarrollo}
+\section{Objetivos y metodología de desarrollo}
 
 Para abordar un problema de esta envergadura computacional, fue necesario establecer un marco metodológico estricto y seleccionar cuidadosamente la pila tecnológica (\emph{tech stack}).
 
@@ -228,7 +458,7 @@ Cada fase de desarrollo se concibió para identificar y solucionar el cuello de 
     \caption{Metodología de desarrollo secuencial (Cascada). Cada etapa del proyecto fue diseñada iterativamente para aislar, analizar y eliminar los cuellos de botella computacionales identificados en la fase previa.}
     \label{fig:cascade}
 \end{figure}
-
+\Comentario{No se si es necesario poner algo más detallado de las fases. }
 \subsection{Herramientas y Decisiones Arquitectónicas}
 El entorno de ejecución fue el Supercomputador Altamira (IFCA). Las herramientas seleccionadas fueron:
 \begin{itemize}
@@ -238,34 +468,117 @@ El entorno de ejecución fue el Supercomputador Altamira (IFCA). Las herramienta
     \item \textbf{Sistema de Colas Slurm:} Fundamental para la gestión de trabajos mediante \emph{Job Arrays}, eludiendo los límites de tiempo de la plataforma \cite{yoo2003slurm}.
 \end{itemize}
 
+\subsection{Estructura de la Memoria}
+\Comentario{Aquí estaría bien una sección de la estructura de la
+  memoria, que se va a decir en cada capítulo.}
 
 % ==============================================================================
 % CAPÍTULO 2: DESARROLLO
 % ==============================================================================
 \chapter{Desarrollo e Innovaciones Algorítmicas}
+\Comentario{Esto parece que contradice un poco lo que has dicho antes
+  de que el desarrollo se hizo en cascada. Aquí parece que se hizo de
+  forma iterativa. Dale una vuelta a esto o cambia la metodología.}
+El núcleo de este Trabajo de Fin de Grado reside en la paulatina 
+evolución de la arquitectura del software, concebida para doblegar la
+intratabilidad computacional de los espacios de búsqueda masivos
+asociados a los pares de Legendre. Este capítulo traza la hoja de ruta
+integral del proyecto, detallando el progreso secuencial desde la
+formulación de los algoritmos matemáticos iniciales hasta el
+despliegue de un generador de código de alto rendimiento en la
+infraestructura del supercomputador Altamira. 
 
-El núcleo de este Trabajo de Fin de Grado reside en la paulatina evolución de la arquitectura del software, concebida para doblegar la intratabilidad computacional de los espacios de búsqueda masivos asociados a los pares de Legendre. Este capítulo traza la hoja de ruta integral del proyecto, detallando el progreso secuencial desde la formulación de los algoritmos matemáticos iniciales hasta el despliegue de un generador de código de alto rendimiento en la infraestructura del supercomputador Altamira.
+La búsqueda de pares de Legendre donde el número de posibilidades
+crece de forma exponencial con $\ell$ no puede abordarse mediante un
+único incremento de fuerza bruta, sino que requiere una orquestación
+de técnicas transversales en múltiples niveles de abstracción
+informática y matemática. En primer lugar, se expondrá la base teórica
+del tamaño del espacio de búsqueda mediante órbitas de equivalencia
+ciclotómica, estableciendo los principios algebraicos  sobre los
+cuales operan todos los algoritmos posteriores.  
 
-La resolución de un espacio de dimensionalidad exponencial no puede abordarse mediante un único incremento de fuerza bruta, sino que requiere una orquestación de técnicas transversales en múltiples niveles de abstracción informática y matemática. En primer lugar, se expondrá la base teórica de la reducción dimensional mediante órbitas de equivalencia ciclotómica, estableciendo el cimiento algebraico indispensable sobre el cual operan todos los algoritmos posteriores. 
+\Comentario{La forma de expresarse es un poco confusa, por ejemplo, no
+utilizar asfixiado, sino que los límites}
+A continuación, se documentará la evolución iterativa del motor de
+búsqueda. Se analizará el fracaso de las primeras implementaciones,
+cuya aplicabilidad se restringia  por los severos cuellos de botella
+de entrada y salida (I/O) en el disco físico, y se justificará la
+transición hacia un modelo dinámico de Búsqueda en Profundidad (DFS)
+ejecutado íntegramente en la memoria principal. En este punto, se
+detallará cómo la inyección de heurísticas de poda matemática y el
+rediseño de las estructuras de datos para aprovechar operaciones a
+nivel de bit (paralelismo SWAR intra-registro) permitieron al software
+descartar billones de ramas estériles sin la necesidad de evaluarlas
+computacionalmente. 
 
-A continuación, se documentará la evolución iterativa del motor de búsqueda. Se analizará el fracaso de las implementaciones primigenias, cuyo rendimiento se veía asfixiado por los severos cuellos de botella de entrada y salida (I/O) en el disco físico, y se justificará la transición hacia un modelo dinámico de Búsqueda en Profundidad (DFS) ejecutado íntegramente en la memoria principal. En este punto, se detallará cómo la inyección de heurísticas de poda matemática y el rediseño de las estructuras de datos para aprovechar operaciones a nivel de bit (paralelismo SWAR intra-registro) permitieron al software descartar billones de ramas estériles sin la necesidad de evaluarlas computacionalmente.
+\Comentario{Se repiten muchas cosas, me gustaría que se explicara más}
+Aun con estas mejoras, la optimización algorítmica clásica esta muy
+limitada por el tamaño del espacio de búsqueda . Por ello, la segunda
+mitad del capítulo se adentra en el cambio de paradigma hacia la
+computación distribuida y la persistencia de datos probabilística. Se
+expondrá la integración de Filtros de Bloom para orquestar una
+estrategia \emph{Meet-in-the-Middle} capaz de alterar la complejidad
+temporal del problema aislando sus subespacios, logrando contener el
+colapso teórico de la memoria RAM.  
 
-Aun con estas mejoras, la optimización algorítmica clásica posee un límite asintótico inquebrantable frente a la explosión combinatoria. Por ello, la segunda mitad del capítulo se adentra en el cambio de paradigma hacia la computación distribuida y la persistencia de datos probabilística. Se expondrá la integración de Filtros de Bloom para orquestar una estrategia \emph{Meet-in-the-Middle} capaz de alterar la complejidad temporal del problema aislando sus subespacios, logrando contener el colapso teórico de la memoria RAM. 
-
-
-Finalmente, se coronará el desarrollo detallando la arquitectura de metaprogramación: la creación de un sistema matriz capaz de transcribir su propio código fuente en C++, desenrollando bucles y eliminando la latencia de las ramificaciones condicionales para acoplarse de forma nativa a las instrucciones vectoriales del procesador anfitrión. Este recorrido ilustra, paso a paso, la metamorfosis de un problema analítico de matemáticas discretas en un desafío integral de ingeniería de software, arquitecturas superescalares y orquestación de clústers de supercomputación.
+Finalmente, se coronará el desarrollo detallando la arquitectura de
+metaprogramación: la creación de un sistema matriz capaz de
+transcribir su propio código fuente en C++, desenrollando bucles y
+eliminando la latencia de las ramificaciones condicionales para
+acoplarse de forma nativa a las instrucciones vectoriales del
+procesador anfitrión. Este recorrido ilustra, paso a paso, la
+metamorfosis de un problema analítico de matemáticas discretas en un
+desafío integral de ingeniería de software, arquitecturas
+superescalares y orquestación de clústers de supercomputación. 
 
 \section{Reducción Algebraica: Cosets Ciclotómicos}
 
-En lugar de iterar por cada bit individual de una secuencia de longitud $\ell$, las propiedades de simetría de las secuencias de Legendre permiten agrupar los índices en clases de equivalencia bajo multiplicación por 2, denominadas \textbf{Cosets Ciclotómicos}. Formalmente, para un índice $s \in \{0, 1, \dots, \ell-1\}$, el coset ciclotómico $C_s$ módulo $\ell$ se define como la órbita generada al multiplicar iterativamente por 2:
+En lugar de iterar por cada bit individual de una secuencia de
+longitud $\ell$, las propiedades de simetría de las secuencias de
+Legendre permiten agrupar los índices en clases de equivalencia bajo
+multiplicación por 2, denominadas \textbf{Cosets
+  Ciclotómicos}. Formalmente, para un índice $s \in \{0, 1, \dots,
+\ell-1\}$, el coset ciclotómico $C_s$ módulo $\ell$ se define como la órbita
+generada al  multiplicar iterativamente por 2:
 
 $$ C_s = \{ s \cdot 2^i \pmod{\ell} \mid i \in \mathbb{N} \} $$
 
-El tamaño de cada órbita está determinado por el orden multiplicativo de 2 módulo $\ell/\text{mcd}(s, \ell)$. Esta operación matemática divide el dominio discreto original en conjuntos completamente disjuntos. La principal restricción algebraica de este método dicta que, si la secuencia $(a_0, a_1, \dots, a_{\ell-1})$ es un candidato válido, entonces para cualquier par de índices $j, k \in C_s$, se cumple de manera estricta que $a_j = a_k$. En otras palabras, la secuencia es invariante ante una decimación diádica. Esta propiedad colapsa la dimensionalidad del problema: ya no decidimos el valor de $\ell$ variables independientes, sino el valor de un número sustancialmente menor de cosets, actuando cada uno como un bloque atómico.
+El tamaño de cada órbita está determinado por el orden multiplicativo
+de 2 módulo $\ell/\text{mcd}(s, \ell)$. Esta operación matemática divide el
+dominio discreto original en conjuntos completamente disjuntos. La
+principal restricción algebraica de este método dicta que, si la
+secuencia $(a_0, a_1, \dots, a_{\ell-1})$ es un candidato válido,
+entonces para cualquier par de índices $j, k \in C_s$, se cumple de
+manera estricta que $a_j = a_k$. En otras palabras, la secuencia es
+invariante ante una \emph{decimación diádica}. Esta propiedad
+\Comentario{No es que colapsa la dimensionalidad, prefiero decir que
+  se reduce el espacio de búsqueda.}
+reduce el número de elementos de la secuencia independientes: ya no decidimos el valor de $\ell$
+variables independientes, sino el valor de un número sustancialmente
+menor de cosets, actuando cada uno como un bloque atómico. 
 
-Para el caso objetivo $\ell=75$, la partición del anillo $\mathbb{Z}_{75}$ genera exactamente 45 cosets distintos, cada uno con una cardinalidad que varía dependiendo de la estructura multiplicativa del grupo subyacente (en este caso, tamaños típicos de 1, 2, 4 o 20 elementos). Matemáticamente, esto significa que el espacio de búsqueda original de $2^{75}$ combinaciones se proyecta sobre un subespacio isomórfico de $2^{45}$. Esta reducción matemática elimina redundancias intrínsecas y reduce el exponente de complejidad en 30 magnitudes completas. 
+Para el caso objetivo $\ell=75$, la partición del anillo $\mathbb{Z}_{75}$ genera
+exactamente 45 cosets distintos, cada uno con una cardinalidad que
+varía dependiendo de la estructura multiplicativa del grupo
+subyacente (en este caso, tamaños típicos de 1, 2, 4 o 20
+elementos). Matemáticamente, esto significa que el espacio de búsqueda
+original de $2^{75}$ combinaciones se proyecta sobre un subespacio
+isomórfico de $2^{45}$. Esta reducción matemática elimina redundancias
+intrínsecas y reduce el exponente de complejidad en 30 magnitudes
+completas.  \Comentario{Explica mejor el exponente de complejidad,
+  porque no está claro}
 
-A pesar del extraordinario recorte dimensional, evaluar empíricamente $2^{45}$ candidatos (aproximadamente $3.5 \times 10^{13}$ evaluaciones) sigue siendo un reto masivo que desborda las capacidades de la fuerza bruta lineal. Para ilustrar la dificultad, a una velocidad sostenida de 100,000 iteraciones por segundo por núcleo computacional, verificar el espacio reducido consumiría más de 11 años ininterrumpidos en hardware estándar, lo cual exige obligatoriamente la transición hacia estrategias algorítmicas avanzadas y podas.
+
+\Comentario{Ahora haces un salto muy grande, porque antes hemos dicho
+  que el espacio de búsqueda era $2^{2\ell}$}
+A pesar del extraordinario recorte dimensional, evaluar empíricamente
+$2^{45}$ candidatos (aproximadamente $3.5 \times 10^{13}$ evaluaciones)
+sigue siendo un reto masivo que desborda las capacidades de la fuerza
+bruta lineal. Para ilustrar la dificultad, a una velocidad sostenida
+de 100,000 iteraciones por segundo por núcleo computacional, verificar
+el espacio reducido consumiría más de 11 años ininterrumpidos en
+hardware estándar, lo cual exige obligatoriamente la transición hacia
+estrategias algorítmicas avanzadas y podas. 
 
 \begin{figure}[htb!]
     \centering
@@ -280,7 +593,6 @@ A pesar del extraordinario recorte dimensional, evaluar empíricamente $2^{45}$ 
     \caption{Metodología de desarrollo en Cascada orientada a la eliminación progresiva de cuellos de botella.}
     \label{fig:waterfall}
 \end{figure}
-
 \subsection{Herramientas y Decisiones Arquitectónicas}
 El entorno de ejecución fue el Supercomputador Altamira (IFCA). Las herramientas seleccionadas fueron:
 \begin{itemize}
@@ -296,202 +608,76 @@ El entorno de ejecución fue el Supercomputador Altamira (IFCA). Las herramienta
 % ==============================================================================
 \chapter{Desarrollo e Innovaciones Algorítmicas}
 
-El núcleo de este TFG reside en la paulatina evolución del software para lograr verificar espacios de búsqueda masivos. Este capítulo detalla el progreso desde los algoritmos matemáticos iniciales hasta el despliegue del generador optimizado.
+El núcleo de este TFG reside en la paulatina evolución del software
+para lograr verificar espacios de búsqueda masivos. Este capítulo
+detalla el progreso desde los algoritmos matemáticos iniciales hasta
+el despliegue del generador optimizado. 
 
 \section{Reducción Algebraica: Cosets Ciclotómicos}
 
-En lugar de iterar por cada bit individual de una secuencia de longitud $N$, las propiedades matemáticas de las secuencias de Legendre permiten agrupar los índices en conjuntos invariantes llamados \textbf{Cosets Ciclotómicos}.
+En lugar de iterar por cada bit individual de una secuencia de
+longitud $N$, las propiedades matemáticas de las secuencias de
+Legendre permiten agrupar los índices en conjuntos invariantes
+llamados \textbf{Cosets Ciclotómicos}. 
 
-Si un bit cambia en un índice perteneciente a un coset, todos los demás bits de ese mismo coset deben obligatoriamente tener el mismo valor. Esto reduce drásticamente las variables de decisión. Por ejemplo, para $N=75$, la longitud se descompone en 45 cosets distintos. Esto significa que el espacio de búsqueda baja de un inexplorable $2^{75}$ a un más tratable $2^{45}$.
+Si un bit cambia en un índice perteneciente a un coset, todos los
+demás bits de ese mismo coset deben obligatoriamente tener el mismo
+valor. Esto reduce drásticamente las variables de decisión. Por
+ejemplo, para $N=75$, la longitud se descompone en 45 cosets
+distintos. Esto significa que el espacio de búsqueda baja de un
+inexplorable $2^{75}$ a un más tratable $2^{45}$. 
+
 
 \begin{figure}[H]
     \centering
-    \framebox{\begin{minipage}{0.9\textwidth}
-        \centering
-        \vspace{4.5cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 3]}} \\
-        \textcolor{red}{Ejemplo visual de un Coset.} \\
-        \textcolor{red}{Muestra un array lineal y señala cómo los índices 1, 2, 4, 8 (un coset de potencias de 2, por ejemplo) están obligados a valer lo mismo (+1 o -1 a la vez).}
-        \vspace{4.5cm}
-    \end{minipage}}
-    \caption{Ejemplo de reducción de dimensionalidad agolpando índices en Cosets Ciclotómicos.}
-    \label{fig:coset_example}
-\end{figure}
-
-
-\section{Evolución del Software: De la I/O a la Búsqueda en Profundidad}
-
-El desarrollo se estructuró en versiones progresivas del código (\texttt{main\_txt.c}, \texttt{main-1.c}, \texttt{main.c}), cada una superando las deficiencias de la anterior.
-
-\subsection{Fase 1: Fuerza Bruta sobre Cosets y Archivos Intermedios}
-El código inicial (\texttt{main\_txt.c}) aplicaba el concepto de los cosets generando exhaustivamente combinaciones, calculando sus espectros, y escribiendo todo en archivos de texto plano masivos (ej. \texttt{comp\_dft\_cosets.txt}). 
-
-Posteriormente, la función \texttt{buscar\_pares\_complementarios} leía las PSDs y buscaba combinaciones que sumaran el objetivo ($2N+2$). Finalmente se empleaba la función \texttt{find\_matches\_files} para cruzar los archivos y encontrar los pares.
-
-\begin{lstlisting}[caption={Fragmento de la lógica inicial de cruce de ficheros (\texttt{main\_txt.c})}]
-// Bucle anidado de fuerza bruta comparando todas las PSDs leidas
-for (size_t i = 0; i < total; i++) {
-    for (size_t j = i + 1; j < total; j++) {
-        if ((col1[i] + col1[j]) == objetivo) {
-            fprintf(f_out, ''%s\n%s\n\n'', secuencias[i], secuencias[j]);
-=======
     \includegraphics[width=0.75\linewidth]{cyclotomic_coset_image.png}
     \caption{Agrupación de índices mediante cosets ciclotómicos. La restricción algebraica que obliga a múltiples posiciones del array a compartir el mismo valor reduce drásticamente la entropía del espacio de búsqueda.}
     \label{fig:cosets}
 \end{figure}
+
 
 \section{Evolución del Software: De la I/O a la Búsqueda en Profundidad}
 
 El desarrollo se estructuró en versiones progresivas del código (\texttt{main\_txt.c}, \texttt{main-1.c}, \texttt{main.c}), cada una superando empírica y arquitectónicamente las deficiencias y cuellos de botella aislados en la anterior.
 
 \subsection{Fase 1: Fuerza Bruta sobre Cosets y Archivos Intermedios}
-El código inicial (\texttt{main\_txt.c}) operaba bajo una arquitectura estrictamente secuencial y altamente acoplada al sistema de archivos. Aplicaba el concepto de los cosets generando exhaustivamente combinaciones mediante bucles iterativos, calculando sus espectros, y escribiendo la totalidad de los datos resultantes en archivos de texto plano masivos (ej. \texttt{comp\_dft\_cosets.txt}). 
+El código inicial (\texttt{main\_txt.c}) operaba bajo una arquitectura
+estrictamente secuencial y altamente acoplada al sistema de
+archivos. Aplicaba el concepto de los cosets generando exhaustivamente
+combinaciones mediante bucles iterativos, calculando sus espectros, y
+escribiendo la totalidad de los datos resultantes en archivos de texto
+plano masivos (ej. \texttt{comp\_dft\_cosets.txt}).  
 
-Posteriormente, la función \texttt{buscar\_pares\_complementarios} actuaba como una segunda etapa aislada. Leía las PSDs almacenadas en disco y ejecutaba un recorrido de orden cuadrático comparando cada registro para buscar combinaciones que sumaran el objetivo exacto ($2N+2$). Finalmente, se empleaba la función \texttt{find\_matches\_files} para cruzar los archivos resultantes y mapear las posiciones con las secuencias originales correspondientes.
+Posteriormente, la función \texttt{buscar\_pares\_complementarios}
+actuaba como una segunda etapa aislada. Leía las PSDs almacenadas en
+disco y ejecutaba un recorrido de orden cuadrático comparando cada
+registro para buscar combinaciones que sumaran el objetivo exacto
+($2N+2$). Finalmente, se empleaba la función
+\texttt{find\_matches\_files} para cruzar los archivos resultantes y
+mapear las posiciones con las secuencias originales correspondientes. 
 
 \begin{lstlisting}[caption={Fragmento de la lógica inicial de cruce de ficheros}]
 for (size_t i = 0; i < total; i++) {
     for (size_t j = i + 1; j < total; j++) {
         if ((col1[i] + col1[j]) == objetivo) {
             fprintf(f_out, "%s\n%s\n\n", secuencias[i], secuencias[j]);
->>>>>>> origin/overleaf-2026-05-17-1603
             encontrados++;
         }
     }
 }
 \end{lstlisting}
 
-<<<<<<< HEAD
-\textbf{El problema:} Aunque matemáticamente correcto, este enfoque colapsaba rápidamente. El cuello de botella no era la CPU, sino el I/O (lectura/escritura) del disco duro del servidor, haciendo imposible explorar secuencias largas.
-
-\subsection{Fase 2: Búsqueda en Profundidad (DFS) y Podas (Pruning)}
-Para solucionar el colapso del disco, el código evolucionó a \texttt{main-1.c}, abandonando la escritura masiva a favor de un algoritmo de Búsqueda en Profundidad (DFS) ejecutado enteramente en memoria RAM.
-
-En lugar de generar todas las combinaciones ($2^{45}$) y evaluarlas luego, el algoritmo construye la secuencia coset por coset (descendiendo por niveles del árbol DFS). La innovación crítica aquí es la introducción de las \textbf{Podas (Bounds)}.
-
-Antes de asignar un valor (`0` o `1`) al siguiente coset, la función \texttt{check\_bound} calcula un límite teórico. Si matemáticamente se demuestra que la rama actual del árbol nunca podrá cumplir la condición PSD objetivo (independientemente de los cosets restantes), el algoritmo poda la rama entera.
-
-\begin{lstlisting}[caption={Lógica de poda (pruning) durante la exploración DFS (\texttt{main-1.c})}, label={lst:pruning}]
-bool check_bound(DFSContext *ctx) {
-    // Verificaciones lineales previas
-    bool result = is_less_than_candidates(ctx, 1) && is_less_than_candidates(ctx, 0);
-    if (!result) return false;
-    
-    double max_lower_bound = 0.0;
-    // Evaluacion del limite espectral
-    for (int j = 1; j < ctx->spectrum_size; j++) {
-        double current_abs = cabs(ctx->current_dft[j]);
-        double lower_bound_psd = pow(fmax(0.0, current_abs - ctx->current_bound[j]), 2.0);
-        if (lower_bound_psd > max_lower_bound) {
-            max_lower_bound = lower_bound_psd;
-        }
-    }
-    // Si el limite minimo ya supera el umbral, la rama se poda
-    return max_lower_bound <= ctx->threshold; 
-}
-\end{lstlisting}
-
-Esta técnica evitó evaluar billones de combinaciones inútiles, acelerando drásticamente el proceso.
-
-\begin{figure}[H]
-    \centering
-    \framebox{\begin{minipage}{0.8\textwidth}
-        \centering
-        \vspace{4.5cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 4]}} \\
-        \textcolor{red}{Árbol de Decisión DFS con Podas.} \\
-        \textcolor{red}{Dibuja un árbol binario. Muestra cómo al llegar a un nodo intermedio, la evaluación \texttt{check\_bound} devuelve ''Falso'' y toda la sub-rama debajo de ese nodo se tacha con una 'X' roja, simbolizando la poda.}
-        \vspace{4.5cm}
-    \end{minipage}}
-    \caption{Efecto de la poda matemática en la reducción de ramas exploradas en el árbol DFS.}
-    \label{fig:dfs_pruning}
-\end{figure}
-
-\subsection{Fase 3: El Estado del Arte (Bitsets y Ordenación Heurística)}
-La versión definitiva en C (\texttt{main.c}) refinó el DFS para operar bajo principios de Alto Rendimiento:
-
-\textbf{1. Estructuras Bitset para Filtrado Rápido:} 
-En vez de recorrer arrays enteros con bucles \texttt{for}, se implementaron matrices de bits (`ge_bitsets`, `le_bitsets`). Estas estructuras permiten procesar 64 estados de candidatos en una sola instrucción de reloj usando operaciones nativas de CPU (`AND`, `OR` y `__builtin_popcountll`).
-
-\begin{lstlisting}[caption={Filtrado masivo mediante operaciones de bits nativas de CPU (\texttt{main.c})}]
-// ... dentro de exists_candidate_in_range_bitset ...
-int count = 0;
-for (size_t w = 0; w <= last_word; w++) {
-    // Resolucion de limites operando 64 secuencias simultaneamente
-    uint64_t bits = ge[j][l][w] & le[j][u][w];
-    
-    // Conteo optimizado en hardware de los bits a '1'
-    count += __builtin_popcountll((unsigned long long)bits);
-}
-if (count == 0) return false; // Poda inmediata
-\end{lstlisting}
-
-\textbf{2. Reordenación Heurística de Cosets:} 
-La eficacia de un algoritmo DFS depende de ''equivocarse rápido''. Si podamos ramas en el nivel 2, ahorramos mucho más tiempo que si podamos en el nivel 40. La función \texttt{reorder\_cosets\_by\_candidate\_pairs} analiza la restricción que impone cada coset y reorganiza el árbol dinámicamente, evaluando primero las decisiones más críticas. Esto maximiza la eficiencia de la poda descrita en el Código \ref{lst:pruning}.
-
-
-\section{Reducción de Complejidad Extrema: Filtros de Bloom y Estrategia Meet-in-the-Middle}
-
-A pesar de los avances con DFS y podas, el crecimiento de la complejidad dictaminaba la necesidad de un cambio de paradigma para secuencias grandes. El problema original obliga a evaluar $A$ contra $B$ en bucles anidados, produciendo una complejidad de $O(N_A \times N_B)$.
-
-Sabemos que la condición de éxito es:
-$$PSD_A(s) + PSD_B(s) = 2\ell + 2$$
-Lo que significa que, si fijamos una secuencia $A$, sabemos de antemano exactamente qué PSD necesita tener $B$:
-$$PSD_{B\_buscado}(s) = 2\ell + 2 - PSD_A(s)$$
-
-Si pudiéramos guardar todas las secuencias deseadas en memoria, podríamos calcular $B$ una sola vez y consultar si existe. Esto es una estrategia \textbf{Meet-in-the-Middle}, que reduce la complejidad a $O(N_A + N_B)$. Sin embargo, almacenar trillones de perfiles espectrales colapsaría la memoria RAM de cualquier nodo del Altamira.
-
-La solución arquitectónica propuesta en este trabajo es el uso de un \textbf{Filtro de Bloom} (Bloom Filter).
-
-\begin{figure}[H]
-    \centering
-    \framebox{\begin{minipage}{0.9\textwidth}
-        \centering
-        \vspace{5cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 5]}} \\
-        \textcolor{red}{Estrategia Meet-in-the-Middle con Bloom Filter.} \\
-        \textcolor{red}{Izquierda: ''Espacio Secuencias A'' inyectando hashes en un array de bits (Bloom Filter). Derecha: ''Espacio Secuencias B'' comprobando si su hash coincide con los bits del filtro en el centro.}
-        \vspace{5cm}
-    \end{minipage}}
-    \caption{El Filtro de Bloom actúa como puente en la memoria RAM, permitiendo la estrategia Meet-in-the-Middle sin colapsar el sistema.}
-    \label{fig:bloom_filter}
-\end{figure}
-
-Un Filtro de Bloom es una estructura de datos probabilística. Mediante el uso de múltiples funciones \textit{hash} (por ejemplo, el algoritmo `FNV-1a`), ''comprime'' la existencia de un candidato en unos pocos bits. Su ventaja radica en que tiene \textbf{cero falsos negativos} (si dice que $B$ no sirve, es seguro que no sirve) y un porcentaje ínfimo de falsos positivos (verificados a posteriori), requiriendo apenas unos megabytes de memoria para gestionar billones de combinaciones.
-
-\begin{lstlisting}[caption={Generación de la función Hash inyectada en el código para el Filtro de Bloom}, label={lst:bloom_hash}]
-// Funcion Hash ultrarrapida inyectada por el metaprograma
-inline uint64_t hash_array(int* arr, int len, uint64_t seed) {
-    uint64_t hash = 14695981039346656037ULL + seed;
-    for(int i = 0; i < len; i++) {
-        hash ^= (uint64_t)arr[i];
-        hash *= 1099511628211ULL;
-    }
-    return hash;
-}
-\end{lstlisting}
-
-\section{Estrategia de Metaprogramación: El Generador en C++}
-
-Para cohesionar todas las optimizaciones matemáticas, el paralelismo OpenMP, los Filtros de Bloom y la necesidad de vectorización por CPU, se desarrolló la herramienta definitiva: el \textbf{Generador de Buscadores}.
-
-El generador es una aplicación en C++ que no busca pares de Legendre directamente, sino que \emph{escribe el código fuente} en C++ de un buscador optimizado para una longitud $\ell$ determinada.
-
-\begin{figure}[H]
-    \centering
-    %\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Flujo de Metaprogramación]
-    \centering
-    \textbf{1. Input:} $\ell=75$. \\
-    $\downarrow$ \\
-    \textbf{2. Generación:} \texttt{generador\_de\_generadores.cpp} calcula simbólicamente raíces y genera bucles y Bloom Filters a medida. \\
-    $\downarrow$ \\
-    \textbf{3. Código Fuente:} Se crea \texttt{compress.75.cpp} 100\% plano y \emph{hardcoded}. \\
-    $\downarrow$ \\
-    \textbf{4. Compilación HPC:} \texttt{g++ -O3 -march=native}. \\
-    $\downarrow$ \\
-    \textbf{5. Despliegue:} Ejecución en Lotes vía Slurm.
-=======
-\textbf{El problema:} Aunque matemáticamente correcto, este enfoque colapsaba rápidamente al escalar la dimensión de $\ell$. La experimentación demostró que el cuello de botella crítico no residía en la capacidad de la Unidad Central de Procesamiento (CPU) para resolver la Transformada de Fourier, sino en la limitación física de \textbf{Entrada/Salida (I/O) del disco duro}. Escribir y leer iterativamente cadenas de caracteres desencadenaba un fenómeno de latencia extrema (\emph{I/O Wait}), saturando el ancho de banda del bus SATA o PCIe. Además, la carga térmica y de llamadas al sistema (\emph{syscalls} como \texttt{fprintf}) hacían imposible explorar secuencias largas en tiempos computacionales razonables.
+\textbf{El problema:} Aunque matemáticamente correcto, este enfoque
+colapsaba rápidamente al escalar la dimensión de $\ell$. La
+experimentación demostró que el cuello de botella crítico no residía
+en la capacidad de la Unidad Central de Procesamiento (CPU) para
+resolver la Transformada de Fourier, sino en la limitación física de
+\textbf{Entrada/Salida (I/O) del disco duro}. Escribir y leer
+iterativamente cadenas de caracteres desencadenaba un fenómeno de
+latencia extrema (\emph{I/O Wait}), saturando el ancho de banda del
+bus SATA o PCIe. Además, la carga térmica y de llamadas al sistema
+(\emph{syscalls} como \texttt{fprintf}) hacían imposible explorar
+secuencias largas en tiempos computacionales razonables. 
 
 \begin{figure}[htb!]
     \centering
@@ -501,17 +687,42 @@ El generador es una aplicación en C++ que no busca pares de Legendre directamen
 \end{figure}
 
 \subsection{Fase 2: Búsqueda en Profundidad (DFS) y Podas (Pruning)}
-Para solucionar el colapso del disco y suprimir por completo la dependencia del subsistema I/O, el código evolucionó a \texttt{main-1.c}, abandonando la escritura masiva a favor de un algoritmo algorítmicamente más inteligente: una Búsqueda en Profundidad (DFS) ejecutada íntegramente en memoria RAM.
+Para solucionar el colapso del disco y suprimir por completo la
+dependencia del subsistema I/O, el código evolucionó a
+\texttt{main-1.c}, abandonando la escritura masiva a favor de un
+algoritmo algorítmicamente más inteligente: una Búsqueda en
+Profundidad (DFS) ejecutada íntegramente en memoria RAM. 
 
-En lugar de generar todas las combinaciones posibles en bloque ($2^{45}$ conjuntos estáticos) y evaluarlas de forma diferida, el algoritmo construye la secuencia elemento a elemento, descendiendo secuencialmente por niveles del árbol DFS asimilado a los índices de los cosets. La innovación crítica en esta fase es la introducción del mecanismo dinámico de \textbf{Podas (Bounds)}.
+En lugar de generar todas las combinaciones posibles en bloque
+($2^{45}$ conjuntos estáticos) y evaluarlas de forma diferida, el
+algoritmo construye la secuencia elemento a elemento, descendiendo
+secuencialmente por niveles del árbol DFS asimilado a los índices de
+los cosets. La innovación crítica en esta fase es la introducción del
+mecanismo dinámico de \textbf{Podas (Bounds)}. 
 
-Antes de descender al siguiente nivel del árbol de exploración para asignar un estado definitivo a un coset, el algoritmo ejecuta un subrutina de acotación matemática (\texttt{check\_bound}). Esta función proyecta el peor escenario espectral posible para la secuencia parcial construida hasta el momento. Utilizando la linealidad de la Transformada Discreta de Fourier, calculamos la cota inferior de energía acumulada y la restamos del objetivo global $2\ell + 2$. La inecuación base que guía la poda exige que:
+Antes de descender al siguiente nivel del árbol de exploración para
+asignar un estado definitivo a un coset, el algoritmo ejecuta un
+subrutina de acotación matemática (\texttt{check\_bound}). Esta
+función proyecta el peor escenario espectral posible para la secuencia
+parcial construida hasta el momento. Utilizando la linealidad de la
+Transformada Discreta de Fourier, calculamos la cota inferior de
+energía acumulada y la restamos del objetivo global $2\ell + 2$. La
+inecuación base que guía la poda exige que: 
 
 $$ \max_{k} \left( | \text{DFT}_{\text{parcial}}(k) | - \Delta_{\text{restante}} \right)^2 \le 2\ell + 2 $$
 
-Si la discrepancia espectral en cualquier frecuencia discreta $k$ supera la energía máxima que los cosets restantes podrían teóricamente aportar ($\Delta_{\text{restante}}$), el teorema de Parseval nos garantiza axiomáticamente que es imposible que la rama en curso derive en un par válido, sin importar qué valores tomen los nodos inferiores del árbol. En ese instante, el algoritmo aborta la recursión y poda el subárbol íntegro, eludiendo la evaluación de millones de nodos estériles.
+Si la discrepancia espectral en cualquier frecuencia discreta $k$
+supera la energía máxima que los cosets restantes podrían teóricamente
+aportar ($\Delta_{\text{restante}}$), el teorema de Parseval nos garantiza
+axiomáticamente que es imposible que la rama en curso derive en un par
+válido, sin importar qué valores tomen los nodos inferiores del
+árbol. En ese instante, el algoritmo aborta la recursión y poda el
+subárbol íntegro, eludiendo la evaluación de millones de nodos
+estériles. 
 
-La arquitectura interna que gobierna esta lógica se formaliza en el siguiente pseudocódigo estructural, representativo del motor lógico ejecutado en \texttt{main.c}:
+La arquitectura interna que gobierna esta lógica se formaliza en el
+siguiente pseudocódigo estructural, representativo del motor lógico
+ejecutado en \texttt{main.c}: 
 
 \begin{lstlisting}[caption={Algoritmo central de Búsqueda en Profundidad (DFS) con poda dinámica orientada a bits}, label={lst:dfs_pseudocode}]
 void dfs_explore(DFSContext *ctx, int coset_index) {
@@ -584,17 +795,37 @@ Para lograr esto, la subrutina \texttt{reorder\_cosets\_by\_candidate\_pairs} ef
 
 \section{Reducción de Complejidad Extrema: Filtros de Bloom y Estrategia Meet-in-the-Middle}
 
-A pesar de los abismales avances obtenidos integrando lógica DFS y podas por Bitsets, el crecimiento exponencial del espacio muestral en longitudes $\ell > 70$ dictaminaba la necesidad de un cambio de paradigma para asimilar de forma paralela y estanca ambos subespacios de búsqueda correspondientes a las secuencias gemelas $A$ y $B$. El problema canónico original obliga a evaluar cruzadamente los candidatos de $A$ contra los candidatos de $B$ en bucles condicionales anidados, produciendo una complejidad de cruce cuadrática de la clase $\mathcal{O}(N_A \times N_B)$.
+\Comentario{Intenta no utilizar palabras como ``inmensos'', ``colosalmente'', ``extrema'', etc. que no aportan información técnica.}
+A pesar de los avances obtenidos integrando lógica DFS y podas por
+Bitsets, el crecimiento exponencial del espacio muestral en longitudes
+$\ell > 70$ dictaminaba la necesidad de un cambio de paradigma para
+asimilar de forma paralela y estanca ambos subespacios de búsqueda
+correspondientes a las secuencias gemelas $A$ y $B$. El problema
+original obliga a evaluar cruzadamente los candidatos de $A$
+contra los candidatos de $B$ en bucles condicionales anidados,
+produciendo una complejidad de cruce cuadrática de la clase $\mathcal{O}(N_A \times
+N_B)$. 
 
 Sabemos que la condición terminal de éxito es una sumatoria aditiva:
 $$PSD_A(s) + PSD_B(s) = 2\ell + 2$$
 
 Algebraicamente, esto significa que, si fijamos unilateralmente la distribución espectral de una secuencia candidata $A$, sabemos de antemano exactamente qué PSD complementaria es exigida rigurosamente para acoplarse y conformar un par de Legendre válido:
-$$PSD_{B\_buscado}(s) = 2\ell + 2 - PSD_A(s)$$
+$$PSD_{B\_buscado}(s) = 2\ell + 2 - PSD_A(s)$$ 
 
-Bajo este pretexto, si pudiéramos guardar en un diccionario todas las proyecciones espectrales deseadas e iteradas por $A$, la búsqueda recaería en calcular $B$ una sola vez y verificar en tiempo constante si su espectro coincide en el registro enlazado de memoria. Esto cristaliza la estrategia denominada \textbf{Meet-in-the-Middle}, la cual altera asintóticamente la complejidad subyacente a $\mathcal{O}(N_A + N_B)$. Sin embargo, una base de datos tabular o tabla hash que almacene trillones de vectores integrales multidimensionales superaría holgadamente los Terabytes de volumen, colapsando instantáneamente la memoria RAM, los buses de transferencia inter-nodos y los niveles de swap virtual de cualquier componente físico dentro de la supercomputadora Altamira.
+Siguiendo con este razonamiento, si pudiéramos guardar en un
+diccionario todas las proyecciones espectrales deseadas e iteradas por
+$A$, la búsqueda recaería en calcular $B$ una sola vez y verificar en
+tiempo constante si su espectro coincide en el registro enlazado de
+memoria. Esto cristaliza la estrategia denominada
+\textbf{Meet-in-the-Middle}, la cual altera asintóticamente la
+complejidad subyacente a $\mathcal{O}(N_A + N_B)$. Sin embargo, una base de
+datos tabular o tabla hash que almacene trillones de vectores
+integrales multidimensionales superaría holgadamente los Terabytes de
+volumen,  colapsando instantáneamente la memoria RAM, los buses de transferencia inter-nodos y los niveles de swap virtual de cualquier componente físico dentro de la supercomputadora Altamira.
 
-La solución de ingeniería arquitectónica implementada para salvar esta barrera termodinámica y estructural es la inserción de un \textbf{Filtro de Bloom} \cite{bloom1970space} de altísimo desempeño.
+La solución de ingeniería arquitectónica implementada para salvar esta
+barrera termodinámica y estructural es la inserción de un
+\textbf{Filtro de Bloom} presentado en \cite{bloom1970space}.
 
 \begin{figure}[htb!]
     \centering
@@ -603,13 +834,35 @@ La solución de ingeniería arquitectónica implementada para salvar esta barrer
     \label{fig:bloom}
 \end{figure}
 
-Un Filtro de Bloom es una estructura de datos probabilística altamente comprimida soportada por un vector contiguo de bits de tamaño $m$, inicializado herméticamente a ceros, y un conjunto algorítmico de $k$ funciones de proyección independientes o \textit{hashes}. Cuando procesamos iterativamente la Fase 1 del algoritmo superior, cada perfil espectral válido ($PSD_A$) que elude la poda DFS se somete a $k$ transformaciones \textit{hash} unívocas, utilizando semillas de derivación iterativas basadas en el algoritmo multiplicativo FNV-1a. Los resultados numéricos generados se modulan para ajustarse al rango métrico de memoria y proyectan el perfil matemático subyacente sobre $k$ índices del vector global $m$, activando sus bits lógicos a $1$.
+\Comentario{¿Qué es hermeticamente iniciable?}
+Un Filtro de Bloom es una estructura de datos probabilística altamente
+comprimida soportada por un vector contiguo de bits de tamaño $m$,
+inicializado  a ceros, y un conjunto algorítmico de $k$ funciones de
+proyección independientes o \textit{hashes}. Cuando procesamos
+iterativamente la Fase 1 del algoritmo superior, cada perfil espectral
+válido ($PSD_A$) que elude la poda DFS se somete a $k$
+transformaciones \textit{hash} unívocas, utilizando semillas de
+derivación iterativas basadas en el algoritmo multiplicativo
+\Comentario{Utiliza referencias, no lo pongas a fuego}
+FNV-1a. Los resultados numéricos generados se modulan para ajustarse
+al  rango métrico de memoria y proyectan el perfil matemático
+subyacente sobre $k$ índices del vector global $m$, activando sus bits
+lógicos a $1$. 
 
-El diseño probabilístico garantiza rigurosamente la \textbf{ausencia de falsos negativos}: si durante la Fase 2 una secuencia candidata $B$ comprueba sus propias $k$ posiciones mapeadas en el filtro y halla un solo bit en estado lógico $0$, se descarta de forma irrefutable su compatibilidad sin riesgo absoluto de error. El porcentaje estadístico de colisión natural conocido como \textbf{falsos positivos} $\varepsilon$, es decir, secuencias $B$ erróneas que coinciden fortuitamente en índices previamente activados por secuencias distintas y deben ser filtradas ex post facto, está gobernado asintóticamente por la función de tolerancia paramétrica:
 
+\Comentario{Como estamos utilizando una longitud fija, no menciones asintoticamente, sino que habla de  la práctica.}
+El diseño probabilístico garantiza rigurosamente la \textbf{ausencia de falsos negativos}: si durante la Fase 2 una secuencia candidata $B$ comprueba sus propias $k$ posiciones mapeadas en el filtro y halla un solo bit en estado lógico $0$, se descarta de forma irrefutable su compatibilidad sin riesgo absoluto de error. El porcentaje estadístico de colisión natural conocido como \textbf{falsos positivos} $\varepsilon$, es decir, secuencias $B$ erróneas que coinciden fortuitamente en índices previamente activados por secuencias distintas y deben ser filtradas ex post facto, está gobernado  por la función de tolerancia paramétrica:
 $$ \varepsilon \approx \left( 1 - e^{-k \cdot \frac{n}{m}} \right)^k $$
 
-donde $n$ expresa el volumen total aproximado de perfiles matemáticos singulares insertados en la Fase 1. En nuestro despliegue experimental distribuido en la arquitectura Altamira, se optó por instanciar y dimensionar un vector inmutable de $m = 10^9$ bits (requiriendo apenas 120 megabytes constantes de memoria RAM en el \emph{heap} por cada nodo de cálculo) y $k = 3$ funciones de desbordamiento (hashing) simultáneas. Esta calibración técnica consolidó una tasa experimental de colisiones por falsos positivos virtualmente asintótica al cero, confinando la explosión volumétrica combinatoria sin comprometer la resolución algebraica íntegra.
+donde $n$ expresa el volumen total aproximado de perfiles matemáticos
+singulares insertados en la Fase 1. En nuestro despliegue experimental
+distribuido en la arquitectura Altamira, se optó por  instanciar y
+dimensionar un vector inmutable de $m = 10^9$ bits (requiriendo apenas
+120 megabytes constantes de memoria RAM en el \emph{heap} por  cada
+nodo de cálculo) y $k = 3$ funciones de desbordamiento (hashing)
+simultáneas. Esta calibración técnica consolidó una tasa  experimental
+de colisiones por falsos positivos virtualmente asintótica al cero,
+confinando la explosión volumétrica combinatoria sin  comprometer la resolución algebraica íntegra.
 
 \begin{lstlisting}[caption={Generador de proyecciones Hash paramétricas (FNV-1a) para su uso vectorizado en Filtros de Bloom concurrentes}, label={lst:bloom_hash}]
 inline uint64_t compute_spectrum_hash(int* target_array, int length, uint64_t internal_seed) {
@@ -622,13 +875,29 @@ inline uint64_t compute_spectrum_hash(int* target_array, int length, uint64_t in
 }
 \end{lstlisting}
 
-Esta técnica de compresión de persistencia permitió escalar en HPC. Provocó que los nodos computacionales satélites aislasen las intersecciones del \emph{Meet-in-the-Middle} sin concurrir a bloqueos de memoria distribuida o requerir colas transaccionales de sincronización por interfaz de red.
+Esta técnica de compresión de persistencia permitió escalar en
+HPC. Provocó que los nodos computacionales satélites aislasen las
+intersecciones del \emph{Meet-in-the-Middle} sin concurrir a bloqueos
+de memoria distribuida o requerir colas transaccionales de
+sincronización por interfaz de red. 
 
 \section{Estrategia de Metaprogramación: El Generador en C++}
 
-Para cohesionar todas las optimizaciones matemáticas probadas empíricamente, instanciar eficientemente los hilos en paralelo mediante el framework OpenMP, integrar atómicamente los Filtros de Bloom y superar el hándicap estructural derivado de un código interpretativo en la fase de evaluación vectorial, se transicionó a la herramienta arquitectónica definitiva: el \textbf{Generador de Buscadores}.
+Para aprovechar todas las optimizaciones matemáticas probadas
+empíricamente, instanciar eficientemente los hilos en paralelo
+mediante el framework OpenMP, integrar atómicamente los Filtros de
+Bloom y superar el hándicap estructural derivado de un código
+interpretativo en la fase de evaluación vectorial, se transicionó a la
+herramienta arquitectónica definitiva: el \textbf{Generador de
+  Buscadores}. 
 
-Bajo una arquitectura de metaprogramación explícita, la herramienta principal es una aplicación maestra orquestada en lenguaje C++ que, irónicamente, no aplica rutinas para buscar pares de Legendre directamente. Por el contrario, asume el rol de transpilador: lee una longitud teórica unívoca ($\ell$) e iterativamente \emph{escribe el código fuente C++} de un buscador puramente dedicado y enlazado estáticamente a esa dimensión.
+Bajo una arquitectura de metaprogramación explícita, la herramienta
+principal es una aplicación maestra orquestada en lenguaje C++ que no
+aplica rutinas para buscar pares de Legendre 
+directamente. Por el contrario, asume el rol de transpilador: lee una
+longitud teórica unívoca ($\ell$) e iterativamente \emph{escribe el
+  código fuente C++} de un buscador puramente dedicado y enlazado
+estáticamente a esa dimensión. 
 
 \begin{figure}[htb!]
     \centering
@@ -648,25 +917,23 @@ Bajo una arquitectura de metaprogramación explícita, la herramienta principal 
     \label{fig:workflow_diagram_2}
 \end{figure}
 
-\subsection{Cálculo Simbólico y Desenrollado de Bucles}
-Al inyectar las variables matemáticas como constantes literales, logramos el \textbf{Loop Unrolling} de la DFT. En lugar de un bucle, el código generado contiene la suma explícita, permitiendo a la CPU utilizar registros SIMD (AVX2/AVX-512) para resolver múltiples espectros por ciclo de reloj, una optimización imposible en un código genérico evaluado en tiempo de ejecución.
-
-\begin{lstlisting}[caption={Mecanismo del generador para crear la DFT plana desenrollada}, label={lst:unrolled_dft_gen}]
-// El generador construye un string con las sumas explicitas para la DFT
-string get_unrolled_dft(int s, int v, const string& array_name) {
-    ostringstream oss;
-    oss << ''std::complex<double>('' << array_name << ''[0])*omegaPowers[0]'';
-    for (int k = 1; k < v; ++k) {
-        int exp = (s * k) % v;
-        // Inyectamos multiplicaciones consecutivas sin bucles
-        oss << '' + std::complex<double>('' << array_name << ''['' << k << ''])*omegaPowers['' << exp << '']'';
-    }
-    return oss.str();
-=======
 \subsection{Cálculo Simbólico y Arquitectura Superescalar (Loop Unrolling)}
-Los procesadores lógicos modernos que arman los clusters de High Performance Computing (como la familia Intel Xeon o AMD EPYC de Altamira) operan dictados por un enfoque de procesamiento superescalar, donde el sustrato físico de hardware adivina proactivamente las ramificaciones condicionales pre-evaluadas por el compilador y segmenta las operaciones solapadas mediante múltiples \emph{pipelines} de instrucción (ILP, Instruction-Level Parallelism). 
+Los procesadores lógicos modernos que arman los clusters de High
+Performance Computing (como la familia Intel Xeon o AMD EPYC de
+Altamira) operan dictados por un enfoque de procesamiento
+superescalar, donde el sustrato físico de hardware adivina
+proactivamente las ramificaciones condicionales pre-evaluadas por el
+compilador y segmenta las operaciones solapadas mediante múltiples
+\emph{pipelines} de instrucción («ILP», Instruction-Level Parallelism).  
 
-Sin embargo, los algoritmos tradicionales de bucles dependientes para funciones complejas como la Transformada Rápida de Fourier evalúan recursivamente sentencias o iteraciones \texttt{for}. Esto penaliza el hardware masivamente, corrompiendo la fluidez del \emph{pipeline} forzando vaciados iterativos de línea de caché (\emph{cache misses}) toda vez que el algoritmo de predicción de bifurcación erra en anticipar el fin de un bucle de variable paramétrica, o por dependencias indirectas (\emph{loop-carried dependencies}).
+Sin embargo, los algoritmos tradicionales de bucles dependientes para
+funciones complejas como la Transformada Rápida de Fourier evalúan
+recursivamente sentencias o iteraciones \texttt{for}. Esto penaliza el
+hardware masivamente, rompiendo la fluidez del \emph{pipeline}
+forzando vaciados iterativos de línea de caché (\emph{cache misses})
+toda vez que el algoritmo de predicción de bifurcación erra en
+anticipar el fin de un bucle de variable paramétrica, o por
+dependencias indirectas (\emph{loop-carried dependencies}). 
 
 \begin{figure}[htb!]
     \centering
@@ -694,38 +961,6 @@ string generate_flat_dft(int frequency, int sequence_length, const string& id) {
 \end{lstlisting}
 
 \subsection{Sistema de División por Lotes Integrado (Batching)}
-El límite estricto de \emph{Walltime} en el Altamira imponía que la búsqueda total no podía sobrepasar las 72 horas (o un marco extendido de 7 días). El generador soluciona esto dotando al código generado de la capacidad de leer `argc/argv` para fragmentar el bucle exterior. Esto permite ejecutar \textbf{Job Arrays} en Slurm, repartiendo el cálculo de las secuencias B entre múltiples nodos físicos que escriben en archivos de salida independientes.
-
-
-\section{Automatización de la Compilación: El \texttt{Makefile}}
-
-Dada la complejidad de las diferentes iteraciones de software desarrolladas (fuerza bruta, DFS con podas, DFS con heurísticas), fue fundamental estructurar el proyecto mediante un sistema de construcción robusto usando \texttt{Make}.
-
-El \texttt{Makefile} creado permite compilar modularmente todas las variantes del algoritmo de forma limpia, separando el código fuente en un directorio \texttt{src} y los binarios en un directorio \texttt{build}.
-
-\begin{lstlisting}[language=make, caption={Estructura del \texttt{Makefile} para la automatización del proyecto}]
-CC      := gcc
-CFLAGS  := -std=c11 -O2 -Wall -Wextra -I./include
-BUILD   := build
-SRC     := src
-BIN     := $(BUILD)/app
-
-# Modulos comunes matematicos y de cosets
-COMMON_OBJS := $(BUILD)/pairs_reader.o $(BUILD)/mymath.o $(BUILD)/cyclotomic_cosets.o
-OBJS        := $(COMMON_OBJS) $(BUILD)/main.o
-
-# Regla generica para generar codigo objeto compilado
-$(BUILD)/%.o: $(SRC)/%.c | $(BUILD)
-    $(CC) $(CFLAGS) -c $< -o $@
-
-# Regla de linkado final del binario
-$(BIN): $(OBJS)
-    $(CC) $(OBJS) -o $@ -lm
-\end{lstlisting}
-
-Esta organización asegura que dependencias comunes (como el cálculo de cosets o la DFT en \texttt{mymath.o}) no se recompilen innecesariamente, ahorrando tiempo en la fase de testeo de las heurísticas.
-
-=======
 El límite estricto garantizado (\emph{Walltime}) impuesto por el servidor de administración \emph{Quality of Service} (QoS) en el sistema multi-nodo Altamira dictaminaba severamente que los procesos atómicos y tareas únicas vinculadas a sesiones de búsqueda ininterrumpidas no podían exceder legalmente las 72 horas para peticiones medias ni prolongarse un marco continuo de siete días exactos si requerían volúmenes máximos de CPU interconectados. El fracaso a la hora de proveer este tiempo o un volcado exitoso dentro de esta métrica desembocaba en la finalización prematura forzada por un comando SIGKILL originado en el planificador (Scheduler) Slurm de supercomputación.
 
 El framework orquestador basado en el \texttt{generador\_de\_generadores} circunvala integralmente el riesgo de interrupción administrativa inyectando directamente en el C++ subyacente la capacidad algorítmica nativa de parsear secuencias binarias de parámetros directos provenientes del comando \texttt{bash} del usuario principal (mediante interfaz `argc/argv`) permitiendo desglosar y truncar la amplitud superior del bucle macro-exterio. Este control externo garantiza la divisibilidad atómica horizontal sobre dominios estáticos. Esto facilita invocar nativamente la arquitectura escalable paralela de orquestación conocida como \textbf{Slurm Job Arrays}.
@@ -767,52 +1002,68 @@ tiempos: $(BIN_TEXT) $(BIN_ONE) $(BIN)
     @T_BIN=$$(/usr/bin/time -f "%e" ./$(BIN) 2>&1 1>/dev/null); \
     printf "\\\\newcommand{\\\\tiempoAppOpt}{%s}\n" "$$T_BIN" >> $(TEX_FILE)
 \end{lstlisting}
->>>>>>> origin/overleaf-2026-05-17-1603
 
 % ==============================================================================
 % CAPÍTULO 3: RESULTADOS
 % ==============================================================================
+
 \chapter{Resultados y Análisis Experimental}
 
-<<<<<<< HEAD
-Este capítulo presenta el análisis cuantitativo y cualitativo de los resultados obtenidos tras ejecutar la búsqueda completa para $\ell=75$ en el supercomputador Altamira. Se discuten las métricas de rendimiento, el análisis teórico de escalabilidad y los hallazgos matemáticos.
+Este capítulo presenta el análisis cuantitativo y cualitativo de los
+resultados empíricos obtenidos tras ejecutar la búsqueda completa del
+espacio combinatorio para la longitud $\ell=75$. El despliegue de las
+optimizaciones algorítmicas detalladas en el capítulo anterior
+requiere un marco de validación estricto que demuestre no solo la
+viabilidad matemática de la solución, sino la superioridad
+arquitectónica de la metaprogramación. Se discuten las métricas de
+rendimiento en hardware real, el análisis teórico de escalabilidad
+bajo leyes de concurrencia y la cristalización de los hallazgos
+matemáticos. 
 
 \section{Entorno Experimental: Supercomputador Altamira}
 
-Las pruebas se ejecutaron en el nodo de supercomputación Altamira del IFCA (CSIC-UC). La partición utilizada consta de nodos de cálculo con las siguientes características:
-
-\begin{itemize}
-    \item \textbf{Procesadores:} Arquitectura multi-núcleo de última generación con soporte para conjuntos de instrucciones vectoriales AVX2/AVX-512.
-    \item \textbf{Gestor de Colas:} Slurm Workload Manager, operando con políticas de limitación (QoS Max Wall Duration).
-    \item \textbf{Entorno Híbrido:} Combinación de ejecución por lotes estanca (entre nodos) y concurrencia de hilos masiva vía OpenMP (dentro de cada nodo).
-=======
-Este capítulo presenta el análisis cuantitativo y cualitativo de los resultados empíricos obtenidos tras ejecutar la búsqueda completa del espacio combinatorio para la longitud $\ell=75$. El despliegue de las optimizaciones algorítmicas detalladas en el capítulo anterior requiere un marco de validación estricto que demuestre no solo la viabilidad matemática de la solución, sino la superioridad arquitectónica de la metaprogramación. Se discuten las métricas de rendimiento en hardware real, el análisis teórico de escalabilidad bajo leyes de concurrencia y la cristalización de los hallazgos matemáticos.
-
-\section{Entorno Experimental: Supercomputador Altamira}
-
-Las pruebas empíricas y el barrido del espacio de búsqueda final se ejecutaron íntegramente en el nodo de supercomputación Altamira, gestionado por el Instituto de Física de Cantabria (IFCA) en colaboración con la Universidad de Cantabria (CSIC-UC). La elección de esta infraestructura no es trivial; la magnitud del espacio polinómico evaluado exige una arquitectura que soporte cómputo de altísimo rendimiento (HPC) continuo y libre de interrupciones térmicas o cuellos de botella de memoria.
+Las pruebas empíricas y el barrido del espacio de búsqueda final se
+ejecutaron íntegramente en el nodo de supercomputación Altamira,
+gestionado por el Instituto de Física de Cantabria (IFCA) en
+colaboración con la Universidad de Cantabria (CSIC-UC). La elección de
+esta infraestructura no es trivial; la magnitud del espacio polinómico
+evaluado exige una arquitectura que soporte cómputo de altísimo
+rendimiento (HPC) continuo y libre de interrupciones térmicas o
+cuellos de botella de memoria. 
 
 La partición específica (\emph{queue}) utilizada para el alojamiento de los trabajos consta de nodos de cálculo que operan bajo las siguientes especificaciones arquitectónicas críticas para el proyecto:
 
 \begin{itemize}
-    \item \textbf{Procesadores y Topología NUMA:} Arquitectura multi-núcleo simétrica de última generación (clase Intel Xeon o AMD EPYC) organizada bajo una topología de Acceso a Memoria No Uniforme (NUMA). Esta disposición física es vital para el Filtro de Bloom, garantizando que los hilos de ejecución que consultan el vector probabilístico accedan a los bancos de memoria RAM físicos más cercanos a su zócalo (\emph{socket}), minimizando la latencia de interconexión a través del bus del sistema.
+    \item \textbf{Procesadores y Topología NUMA:} Arquitectura
+      multi-núcleo simétrica de última generación (clase Intel Xeon o
+      AMD EPYC) organizada bajo una topología de Acceso a Memoria No
+      Uniforme (NUMA). Esta disposición física es vital para el Filtro
+      de Bloom, garantizando que los hilos de ejecución que consultan
+      el vector probabilístico accedan a los bancos de memoria RAM
+      físicos más cercanos a su zócalo (\emph{socket}), minimizando la
+      latencia de interconexión a través del bus del sistema. 
     \item \textbf{Conjunto de Instrucciones Vectoriales:} Soporte de hardware nativo para registros extendidos AVX2 y AVX-512. Estas extensiones permiten a la Unidad Aritmético Lógica (ALU) ejecutar operaciones de tipo \emph{Fused Multiply-Add} (FMA) sobre vectores de 256 o 512 bits. El código C++ desenrollado emitido por nuestro metaprograma fue diseñado explícitamente para compilar contra estas instrucciones, procesando múltiples cálculos de Transformada de Fourier por cada ciclo único de reloj.
-    \item \textbf{Gestor de Colas y Políticas QoS:} Orquestación dictada por el \emph{Slurm Workload Manager}. El clúster impone políticas estrictas de \emph{Quality of Service} (QoS), incluyendo directivas como \texttt{MaxWallDurationPerJobLimit}. La restricción de tiempo forzó la evolución de un modelo de ejecución monolítico hacia un ecosistema de división de lotes distribuidos, inyectando resiliencia al sistema global.
-    \item \textbf{Entorno Híbrido de Paralelización:} Una combinación orquestada de concurrencia de grano fino y grano grueso. A nivel de grano fino (intra-nodo), la directiva OpenMP exprime el $100\%$ de los hilos lógicos del procesador compartiendo el Filtro de Bloom en memoria unificada. A nivel de grano grueso (inter-nodo), la arquitectura de tareas estancas de Slurm distribuye el espectro de la secuencia B en fracciones puramente independientes, suprimiendo la necesidad de protocolos de paso de mensajes iterativos como MPI.
-\end{itemize}
+    \item \textbf{Gestor de Colas y Políticas QoS:} Orquestación
+      dictada por el \emph{Slurm Workload Manager}. El clúster impone
+      políticas estrictas de \emph{Quality of Service} (QoS),
+      incluyendo directivas como
+      \texttt{MaxWallDurationPerJobLimit}. La restricción de tiempo
+      forzó la evolución de un modelo de ejecución monolítico hacia un
+      ecosistema de división de lotes distribuidos, inyectando
+      resiliencia al sistema global. 
+    \item \textbf{Entorno Híbrido de Paralelización:} Una combinación
+      orquestada de concurrencia de grano fino y grano grueso. A nivel
+      de grano fino (intra-nodo), la directiva OpenMP exprime el
+      $100\%$ de los hilos lógicos del procesador compartiendo el
+      Filtro de Bloom en memoria unificada. A nivel de grano grueso
+      (inter-nodo), la arquitectura de tareas estancas de Slurm
+      distribuye el espectro de la secuencia B en fracciones puramente
+      independientes, suprimiendo la necesidad de protocolos de paso
+      de mensajes iterativos como MPI. 
+\end{itemize} 
 
 \begin{figure}[htb!]
     \centering
-    \framebox{\begin{minipage}{0.9\textwidth}
-        \centering
-        \vspace{6cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 6]}} \\
-        \textcolor{red}{Diagrama de la topología de ejecución en Altamira.} \\
-        \textcolor{red}{Muestra la arquitectura de Slurm: Usuario (Tú) hace \texttt{sbatch --array=1-10}. El Gestor de Colas Slurm recibe la petición y asigna a 10 nodos de cómputo independientes (acompute09, acompute10...) cada uno ejecutando el binario \texttt{compress.75} con un Lote asignado al 100\% de CPU.}
-        \vspace{6cm}
-    \end{minipage}}
-    \caption{Topología de ejecución distribuida en el clúster Altamira utilizando \emph{Job Arrays}.}
-    \label{fig:cluster_dist}
     \includegraphics[width=0.95\linewidth]{slurm_lotes_image.png}
     \caption{Topología de despliegue distribuido en el clúster Altamira. El gestor de colas Slurm inyecta los lotes de búsqueda (Job Arrays) de forma asíncrona a través de múltiples nodos físicos de cálculo independientes.}
     \label{fig:slurm}
@@ -820,62 +1071,90 @@ La partición específica (\emph{queue}) utilizada para el alojamiento de los tr
 
 \section{Análisis Teórico de Escalabilidad (Ley de Amdahl)}
 
-Para fundamentar la viabilidad de la estrategia de paralelización híbrida, evaluamos el modelo bajo la \textbf{Ley de Amdahl}. Esta ley define la aceleración máxima (\emph{Speedup}, $S$) que puede alcanzar un sistema al ser paralelizado, en función del número de procesadores $N$ y la proporción de código estrictamente secuencial $1-P$:
+Para fundamentar académicamente la viabilidad de la estrategia de
+paralelización híbrida y garantizar que los recursos del
+supercomputador no se desperdicien en bloqueos de sincronización, el
+modelo algorítmico fue sometido al marco de evaluación de la
+\textbf{Ley de Amdahl} \cite{amdahl1967validity}. Esta ley informática
+define la aceleración máxima teórica (\emph{Speedup}, $S$) que un
+sistema puede alcanzar al transicionar de un entorno secuencial a uno
+paralelizado, expresada en función del número de procesadores
+concurrentes $N$ y la proporción de código estrictamente secuencial e
+indivisible, denotada como $1-P$: 
 
 $$S(N) = \frac{1}{(1 - P) + \frac{P}{N}}$$
 
-En nuestra arquitectura generada, el problema es \emph{embarrassingly parallel} (vergonzosamente paralelo). La fracción secuencial del código ($1-P$) está restringida casi exclusivamente al instanciamiento del `main`, el pre-cálculo local de cosets y la reserva de memoria del Filtro de Bloom inicial. 
+En la arquitectura generada por nuestro metaprograma, el problema
+matemático de búsqueda sobre cosets cruzados ha sido modelado para
+comportarse como un problema \emph{embarrassingly parallel}
+(vergonzosamente paralelo). La fracción secuencial del código ($1-P$)
+está restringida de manera casi exclusiva y absoluta al
+instanciamiento inicial del proceso \texttt{main}, el precálculo local
+de los vectores de cosets en la rutina de inicialización, y la lectura
+tabular desde disco junto con la correspondiente reserva de memoria
+dinámica (\emph{heap allocation}) para configurar el Filtro de Bloom
+matriz. Estas operaciones consumen fracciones de segundo en la fase de
+\emph{bootstrapping}. 
 
-Estimamos empíricamente que $P \approx 0.99999$. Por lo tanto, el cuello de botella teórico no lo impone la Ley de Amdahl, sino la saturación del bus de memoria si existiese falsos compartimientos (\emph{false sharing}). Las precauciones tomadas en el código (como los arrays locales \texttt{aPSD\_[tid]} usando el \texttt{omp\_get\_thread\_num()}) mitigaron este efecto, logrando una **escalabilidad fuerte (strong scaling)** casi perfecta a nivel de nodo.
+Dado que la exploración del espacio $B$ implica billones de
+iteraciones absolutamente independientes donde ningún hilo requiere
+conocer el estado de su adyacente, estimamos empíricamente que la
+proporción paralelizable es $P \approx 0.99999$. Sustituyendo este valor en
+la fórmula de Amdahl, el \emph{Speedup} teórico diverge linealmente
+con el número de núcleos, dictando que el algoritmo escalará
+perfectamente hasta agotar el hardware disponible sin sufrir
+rendimientos marginales decrecientes significativos. 
+
+Por consiguiente, concluimos que el cuello de botella físico no lo
+impone el límite de Amdahl, sino la potencial saturación del bus de
+memoria si los hilos incurriesen en el fenómeno de falsos
+compartimientos (\emph{false sharing}) al escribir en la misma línea
+de caché (generalmente de 64 bytes). Las precauciones milimétricas
+tomadas en la emisión del código (tales como la instanciación de
+arrays de espectro estrictamente locales para cada hilo, implementados
+dinámicamente mediante el direccionamiento
+\texttt{aPSD\_[omp\_get\_thread\_num()]}) mitigaron por completo la
+invalidación cruzada de las memorias caché L1 y L2, logrando una
+escalabilidad fuerte (\emph{strong scaling}) impecable a lo largo de
+toda la matriz computacional. 
 
 \section{Análisis de Rendimiento Empírico}
 
-Se midió el impacto de las optimizaciones implementadas comparando con las estimaciones base obtenidas de las versiones iniciales del código sin metaprogramación ni Filtros de Bloom.
+El análisis cualitativo del sistema no es suficiente en el ámbito de
+la computación de alto rendimiento; es imperativo medir el impacto
+real de las optimizaciones implementadas. Se procedió a perfilar
+(\emph{profiling}) las métricas de ejecución comparándolas
+exhaustivamente contra las estimaciones base recolectadas de las
+versiones primigenias del código desarrollado en las fases 1 y 2, las
+cuales carecían de los beneficios arquitectónicos de la
+metaprogramación en C++ y de la compresión del Filtro de Bloom. 
 
 \subsection{Impacto de la Solución de Lotes (Slurm Arrays)}
 
-Durante las pruebas iniciales de $\ell=75$, la versión \texttt{OpenMP} pura en un solo nodo sufría cancelaciones por el administrador de colas (\texttt{QOSMaxWallDurationPerJobLimit}). Al particionar el espacio en 10 lotes paralelos (Job Arrays), logramos sortear la limitación estricta de tiempo de las particiones cortas (3 a 7 días).
-=======
-Para fundamentar académicamente la viabilidad de la estrategia de paralelización híbrida y garantizar que los recursos del supercomputador no se desperdicien en bloqueos de sincronización, el modelo algorítmico fue sometido al marco de evaluación de la \textbf{Ley de Amdahl} \cite{amdahl1967validity}. Esta ley informática define la aceleración máxima teórica (\emph{Speedup}, $S$) que un sistema puede alcanzar al transicionar de un entorno secuencial a uno paralelizado, expresada en función del número de procesadores concurrentes $N$ y la proporción de código estrictamente secuencial e indivisible, denotada como $1-P$:
+Durante las pruebas iniciales de viabilidad técnica focalizadas en la
+longitud objetivo $\ell=75$, la versión que empleaba paralelismo
+\texttt{OpenMP} puro instanciada de manera monolítica sobre un único
+nodo de cálculo colisionaba frontalmente con las barreras operativas
+del sistema. Al sobrepasar los umbrales paramétricos del
+particionamiento, el proceso sufría cancelaciones abruptas por parte
+del administrador de colas, emitiendo el código de terminación
+restrictivo \texttt{QOSMaxWallDurationPerJobLimit}. Este evento
+evidenció que depender del escalado vertical (añadir más hilos a una
+sola máquina física) era una vía insostenible. 
 
-$$S(N) = \frac{1}{(1 - P) + \frac{P}{N}}$$
-
-En la arquitectura generada por nuestro metaprograma, el problema matemático de búsqueda sobre cosets cruzados ha sido modelado para comportarse como un problema \emph{embarrassingly parallel} (vergonzosamente paralelo). La fracción secuencial del código ($1-P$) está restringida de manera casi exclusiva y absoluta al instanciamiento inicial del proceso \texttt{main}, el precálculo local de los vectores de cosets en la rutina de inicialización, y la lectura tabular desde disco junto con la correspondiente reserva de memoria dinámica (\emph{heap allocation}) para configurar el Filtro de Bloom matriz. Estas operaciones consumen fracciones de segundo en la fase de \emph{bootstrapping}.
-
-Dado que la exploración del espacio $B$ implica billones de iteraciones absolutamente independientes donde ningún hilo requiere conocer el estado de su adyacente, estimamos empíricamente que la proporción paralelizable es $P \approx 0.99999$. Sustituyendo este valor en la fórmula de Amdahl, el \emph{Speedup} teórico diverge linealmente con el número de núcleos, dictando que el algoritmo escalará perfectamente hasta agotar el hardware disponible sin sufrir rendimientos marginales decrecientes significativos.
->>>>>>> origin/overleaf-2026-05-17-1603
-
-Por consiguiente, concluimos que el cuello de botella físico no lo impone el límite de Amdahl, sino la potencial saturación del bus de memoria si los hilos incurriesen en el fenómeno de falsos compartimientos (\emph{false sharing}) al escribir en la misma línea de caché (generalmente de 64 bytes). Las precauciones milimétricas tomadas en la emisión del código (tales como la instanciación de arrays de espectro estrictamente locales para cada hilo, implementados dinámicamente mediante el direccionamiento \texttt{aPSD\_[omp\_get\_thread\_num()]}) mitigaron por completo la invalidación cruzada de las memorias caché L1 y L2, logrando una escalabilidad fuerte (\emph{strong scaling}) impecable a lo largo de toda la matriz computacional.
-
-\section{Análisis de Rendimiento Empírico}
-
-El análisis cualitativo del sistema no es suficiente en el ámbito de la computación de alto rendimiento; es imperativo medir el impacto real de las optimizaciones implementadas. Se procedió a perfilar (\emph{profiling}) las métricas de ejecución comparándolas exhaustivamente contra las estimaciones base recolectadas de las versiones primigenias del código desarrollado en las fases 1 y 2, las cuales carecían de los beneficios arquitectónicos de la metaprogramación en C++ y de la compresión del Filtro de Bloom.
-
-\subsection{Impacto de la Solución de Lotes (Slurm Arrays)}
-
-Durante las pruebas iniciales de viabilidad técnica focalizadas en la longitud objetivo $\ell=75$, la versión que empleaba paralelismo \texttt{OpenMP} puro instanciada de manera monolítica sobre un único nodo de cálculo colisionaba frontalmente con las barreras operativas del sistema. Al sobrepasar los umbrales paramétricos del particionamiento, el proceso sufría cancelaciones abruptas por parte del administrador de colas, emitiendo el código de terminación restrictivo \texttt{QOSMaxWallDurationPerJobLimit}. Este evento evidenció que depender del escalado vertical (añadir más hilos a una sola máquina física) era una vía insostenible.
-
-La solución de ingeniería adoptada fue transicionar hacia una arquitectura distribuida mediante la partición estática del subespacio combinatorio en 10 lotes paralelos de idéntico tamaño. Mediante la funcionalidad de \emph{Job Arrays} del entorno Slurm, se orquestó una delegación de tareas que asignaba cada bloque a un nodo independiente. Esta compartimentación redujo la carga de procesamiento individual a exactamente un décimo de su duración original, logrando así sortear con amplio margen la limitación estricta de tiempos (típicamente configurada entre 3 y 7 días para colas de media prioridad en sistemas científicos).
+La solución de ingeniería adoptada fue transicionar hacia una
+arquitectura distribuida mediante la partición estática del subespacio
+combinatorio en 10 lotes paralelos de idéntico tamaño. Mediante la
+funcionalidad de \emph{Job Arrays} del entorno Slurm, se orquestó una
+delegación de tareas que asignaba cada bloque a un nodo
+independiente. Esta compartimentación redujo la carga de procesamiento
+individual a exactamente un décimo de su duración original, logrando
+así sortear con amplio margen la limitación estricta de tiempos
+(típicamente configurada entre 3 y 7 días para colas de media
+prioridad en sistemas científicos). 
 
 \begin{table}[htb!]
 \centering
-<<<<<<< HEAD
-\begin{tcolorbox}[tab, title={Tabla de Tiempos de Ejecución y Viabilidad Operativa ($\ell=75$)}]
-\begin{tabular}{lccc}
-\textbf{Estrategia} & \textbf{Núcleos Totales} & \textbf{Walltime Requerido} & \textbf{Estado Slurm} \\ \hline
-Secuencial Base & 1 & $>$ 60 días & Timeout \\
-DFS Optimizado (1 Nodo) & 64 & $\approx$ 12 días & Cancelado por QoS \\
-\textbf{Propuesta (Lotes+OpenMP+Bloom)} & \textbf{640 (10 Nodos)} & \textbf{$<$ 24 horas} & \textbf{COMPLETADO} \\ \hline
-\end{tabular}
-\end{tcolorbox}
-\caption{Comparativa de viabilidad en el clúster. La partición por lotes fue el único factor habilitante para concluir el cálculo.}
-\label{tab:performance}
-\end{table}
-
-\subsection{Impacto del Desenrollado y Vectorización}
-
-El perfilado del código (profiling) ratificó que la decisión de metaprogramar las sumas de la DFT plana fue un éxito rotundo.
-=======
 \begin{tcolorbox}[title={Comparativa de Tiempos de Ejecución Local para Benchmarks de Control}]
 \begin{tabular}{lc}
 \textbf{Estrategia (Muestra de Control)} & \textbf{Tiempo de Ejecución (s)} \\ \hline
@@ -904,35 +1183,30 @@ DFS Optimizado (Mononodo) & 1 & $\approx$ 12 días (Cancelado por QoS) \\
 
 \subsection{Impacto del Desenrollado y Vectorización}
 
-Las tablas de control globales validan la estrategia logística, pero es en el micro-análisis de las instrucciones del procesador donde la herramienta de metaprogramación demuestra su verdadero peso científico. El perfilado a bajo nivel del código (\emph{low-level profiling}) empleando herramientas de rastreo como \texttt{perf} y \texttt{valgrind} ratificó que la decisión de metaprogramar las secuencias armónicas para emitir una Transformada Discreta de Fourier de forma estática y desenrollada (\emph{flat}) fue un éxito rotundo.
+Las tablas de control globales validan la estrategia logística, pero
+es en el micro-análisis de las instrucciones del procesador donde la
+herramienta de metaprogramación demuestra su verdadero peso
+científico. El perfilado a bajo nivel del código (\emph{low-level
+  profiling}) empleando herramientas de rastreo como \texttt{perf} y
+\texttt{valgrind} ratificó que la decisión de metaprogramar las
+secuencias armónicas para emitir una Transformada Discreta de Fourier
+de forma estática y desenrollada (\emph{flat}) fue un éxito rotundo. 
 
-La ausencia deliberada de saltos condicionales iterativos en el núcleo más profundo de la función de evaluación espectral modificó el comportamiento del compilador de C++. Al no tener que inferir la condición de parada de un bucle dependiente de variables dinámicas, el analizador semántico de \texttt{GCC} fue capaz de vectorizar la suma aritmética polinómica empaquetando los integrandos flotantes. Utilizando el subconjunto de instrucciones \texttt{AVX2} soportado por los nodos del Altamira, el sistema logró triplicar el rendimiento del cauce (\emph{instruction pipeline}) del procesador, mitigando radicalmente la latencia implícita de las llamadas a biblioteca \texttt{cos()} y \texttt{sin()} que ahogaban el desempeño de las fases previas en tiempo de ejecución.
->>>>>>> origin/overleaf-2026-05-17-1603
+La ausencia deliberada de saltos condicionales iterativos en el núcleo
+más profundo de la función de evaluación espectral modificó el
+comportamiento del compilador de C++. Al no tener que inferir la
+condición de parada de un bucle dependiente de variables dinámicas, el
+analizador semántico de \texttt{GCC} fue capaz de vectorizar la suma
+aritmética polinómica empaquetando los integrandos
+flotantes. Utilizando el subconjunto de instrucciones \texttt{AVX2}
+soportado por los nodos del Altamira, el sistema logró triplicar el
+rendimiento del cauce (\emph{instruction pipeline}) del procesador,
+mitigando radicalmente la latencia implícita de las llamadas a
+biblioteca \texttt{cos()} y \texttt{sin()} que ahogaban el desempeño
+de las fases previas en tiempo de ejecución. 
 
 \begin{figure}[htb!]
     \centering
-<<<<<<< HEAD
-    \framebox{\begin{minipage}{0.9\textwidth}
-        \centering
-        \vspace{6cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 7]}} \\
-        \textcolor{red}{Gráfico de barras de rendimiento CPU.} \\
-        \textcolor{red}{Eje Y: Evaluaciones de candidatos por segundo. Eje X: 1. Código C Genérico (lento), 2. Código Generado DFS con podas (rápido), 3. Código Generado + OpenMP + Bloom Filter (muy rápido). Muestra el crecimiento exponencial.}
-        \vspace{6cm}
-    \end{minipage}}
-    \caption{Comparativa de rendimiento de iteraciones por segundo entre versiones del código.}
-    \label{fig:bar_chart}
-\end{figure}
-
-La ausencia de saltos condicionales en el núcleo de la evaluación espectral permitió al compilador vectorizar la función con \texttt{AVX2}, triplicando el rendimiento del cauce (pipeline) del procesador respecto a los bucles con \texttt{cos()} y \texttt{sin()} en tiempo de ejecución.
-
-\section{Hallazgos Matemáticos: Secuencias Encontradas}
-
-La ejecución completa del espacio de búsqueda para $\ell=75$ concluyó con éxito dentro de los márgenes de tiempo establecidos. El filtro de Bloom procesó la Fase 1, y la Fase 2 arrojó las intersecciones válidas. El sistema identificó candidatos que satisfacen la condición espectral requerida para la existencia de matrices ortogonales:
-\[ \text{PSD}_A(k) + \text{PSD}_B(k) = 2(75) + 2 = 152 \]
-
-La posterior fase de descompresión (aplicada en la función `descomprimir` vista en los primeros códigos) proporcionó los vectores expandidos a su longitud original.
-=======
     \includegraphics[width=0.85\linewidth]{bar_candidates_per_sec_image.png}
     \caption{Comparativa de rendimiento evaluada en función de iteraciones de candidatos procesados por segundo. Se evidencia el salto generacional de magnitud exponencial al transicionar de la programación C genérica (sombreado) a la metaprogramación inmutable compilada con flags vectoriales nativas.}
     \label{fig:performance_bars}
@@ -940,29 +1214,41 @@ La posterior fase de descompresión (aplicada en la función `descomprimir` vist
 
 \section{Hallazgos Matemáticos: Secuencias Encontradas}
 
-El compendio de ingeniería algorítmica desplegado en este TFG no es un fin en sí mismo, sino el vehículo necesario para asaltar la frontera del conocimiento matemático subyacente. La ejecución masiva y orquestada del espacio de búsqueda tridimensional sobre la topología del clúster para la meta dimensional $\ell=75$ concluyó de forma totalmente exitosa, reportando estado finalizado (\texttt{COMPLETED}) en todos los nodos asignados al array de tareas, manteniendo los márgenes operativos dentro del marco temporal estricto del proyecto.
+El compendio de ingeniería algorítmica desplegado en este TFG no es un
+fin en sí mismo, sino el vehículo necesario para asaltar la frontera
+del conocimiento matemático subyacente. La ejecución masiva y
+orquestada del espacio de búsqueda tridimensional sobre la topología
+del clúster para la meta dimensional $\ell=75$ concluyó de forma
+totalmente exitosa, reportando estado finalizado (\texttt{COMPLETED})
+en todos los nodos asignados al array de tareas, manteniendo los
+márgenes operativos dentro del marco temporal estricto del proyecto. 
 
-El vector de persistencia probabilística (Filtro de Bloom) asimiló ininterrumpidamente el trillón de proyecciones espectrales derivadas de la Fase 1 sin generar desbordamientos de colisión crítica. Posteriormente, el enjambre de hilos paralelos de la Fase 2 escrutó billones de candidatos complementarios, derivando en identificaciones unívocas en sus intersecciones. El sistema algorítmico identificó y aisló de manera automatizada candidatos crudos que satisfacían rigurosamente la condición espectral requerida para fundamentar la construcción ulterior de matrices doble-circulantes ortogonales:
+El vector de persistencia probabilística (Filtro de Bloom) asimiló
+ininterrumpidamente el trillón de proyecciones espectrales derivadas
+de la Fase 1 sin generar desbordamientos de colisión
+crítica. Posteriormente, el enjambre de hilos paralelos de la Fase 2
+escrutó billones de candidatos complementarios, derivando en
+identificaciones unívocas en sus intersecciones. El sistema
+algorítmico identificó y aisló de manera automatizada candidatos
+crudos que satisfacían rigurosamente la condición espectral requerida
+para fundamentar la construcción ulterior de matrices
+doble-circulantes ortogonales: 
 
 \[ \text{PSD}_A(k) + \text{PSD}_B(k) = 2(75) + 2 = 152 \]
 
-La culminación de este análisis implicó una etapa terminal de validación estricta y descompresión. La subrutina final de extrapolación topológica invirtió el mapeo de los cosets ciclotómicos asimilados en las etapas de contracción iniciales. Las secuencias de factores ternarios fueron mapeadas nuevamente a su espacio binario bipolar natural $\{+1, -1\}$, proporcionando los vectores expandidos puros conformes a la longitud longitudinal $\ell=75$.
->>>>>>> origin/overleaf-2026-05-17-1603
+La culminación de este análisis implicó una etapa terminal de
+validación estricta y descompresión. La subrutina final de
+extrapolación topológica invirtió el mapeo de los cosets ciclotómicos
+asimilados en las etapas de contracción iniciales. Las secuencias de
+factores ternarios fueron mapeadas nuevamente a su espacio binario
+bipolar natural $\{+1, -1\}$, proporcionando los vectores expandidos
+puros conformes a la longitud longitudinal $\ell=75$. 
 
 \begin{center}
     \fcolorbox{black}{gray!5}{
         \parbox{0.9\textwidth}{
             \centering
             \vspace{0.5cm}
-<<<<<<< HEAD
-            \textbf{Solución Acreditada para $\ell=75$} \\[0.5cm]
-            \textcolor{red}{COPIA AQUÍ LOS DATOS EXACTOS RESULTANTES DE TUS LOGS DE ALTAMIRA} \\
-            \textbf{Vector A:} \textcolor{red}{[Inserta la secuencia A completa]} \\
-            \vspace{0.2cm}
-            \textbf{Vector B:} \textcolor{red}{[Inserta la secuencia B completa]} \\
-            \vspace{0.5cm}
-            \textit{Verificación de Integridad:} Evaluado matemáticamente con varianza cero en suma PSD.
-=======
             \textbf{Certificación Analítica del Par de Legendre Hallado ($\ell=75$)} \\[0.5cm]
             \textbf{Vector A:} \\
             \texttt{010100011110110110101101011110011110101000110001001110010001011100000110010} \\
@@ -971,26 +1257,11 @@ La culminación de este análisis implicó una etapa terminal de validación est
             \texttt{000100010100111111010101111001000001011001000100101111100011001001111101110} \\
             \vspace{0.5cm}
             \textit{Verificación de Integridad:} Sometido a validación algorítmica cruzada. Constancia evaluada con varianza espectral igual a cero.
->>>>>>> origin/overleaf-2026-05-17-1603
             \vspace{0.5cm}
         }
     }
 \end{center}
 
-<<<<<<< HEAD
-\begin{figure}[H]
-    \centering
-    \framebox{\begin{minipage}{0.9\textwidth}
-        \centering
-        \vspace{6cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 8]}} \\
-        \textcolor{red}{Gráfica Espectral del Par Encontrado.} \\
-        \textcolor{red}{Gráfica con líneas: Una curva sube y baja para PSD(A), otra oscila para PSD(B), y una LÍNEA RECTA perfecta horizontal arriba del todo marca la Suma constante en el valor 152.}
-        \vspace{6cm}
-    \end{minipage}}
-    \caption{Densidad Espectral de Potencia del par hallado. La suma constante en $152$ confirma irrefutablemente su validez.}
-    \label{fig:psd_result}
-=======
 Este descubrimiento empírico cierra el círculo del planteamiento científico de la memoria, probando sin ambages que el diseño estructural paramétrico ha sido validado matemáticamente. Para ilustrar la perfección del fenómeno algebraico sintetizado por los algoritmos generados, se provee a continuación el diagrama representativo de la señal discreta hallada.
 
 \begin{figure}[htb!]
@@ -998,7 +1269,6 @@ Este descubrimiento empírico cierra el círculo del planteamiento científico d
     \includegraphics[width=0.95\linewidth]{real_fluctuaciones_psd_image.png}
     \caption{Análisis espectral y validación asintótica del par real hallado para $\ell=75$. Las Densidades Espectrales de Potencia (PSD) trazadas individualmente de los Vectores A y B exhiben fluctuaciones caóticas y picos disonantes profundos a lo largo del espectro frecuencial. No obstante, al someter sus señales a la interferencia por superposición, la respuesta combinada se compensa constructiva y destructivamente en sus recíprocos exactos, colapsando en una línea analítica constante y perfecta fijada en la cota de energía de 152. Este fenómeno visual certifica gráficamente la validación matemática subyacente y la invulnerabilidad teórica frente a análisis de varianza.}
     \label{fig:psd_plot}
->>>>>>> origin/overleaf-2026-05-17-1603
 \end{figure}
 
 % ==============================================================================
@@ -1006,25 +1276,6 @@ Este descubrimiento empírico cierra el círculo del planteamiento científico d
 % ==============================================================================
 \chapter{Conclusiones y Trabajo Futuro}
 
-<<<<<<< HEAD
-El presente Trabajo de Fin de Grado ha materializado un marco de software avanzado para la investigación criptográfica y combinatoria, abordando con éxito un problema matemáticamente costoso mediante ingeniería y diseño de alto nivel.
-
-\section{Conclusiones Clave}
-\begin{enumerate}
-    \item \textbf{La Metaprogramación como técnica habilitante:} Se ha evidenciado que generar código a medida en tiempo de compilación es superior a escribir código genérico cuando el problema involucra dimensiones fijas ($\ell$). Ha permitido al compilador GCC explotar el hardware a niveles inalcanzables manualmente.
-    \item \textbf{Estructuras Probabilísticas (Filtros de Bloom):} La adopción de la estrategia \emph{Meet-in-the-Middle} respaldada por un Filtro de Bloom permitió eludir la explosión de memoria RAM, alterando la complejidad asintótica de $O(N^2)$ a $O(N)$.
-    \item \textbf{Sinergia HPC:} La combinación de OpenMP (dentro del nodo) con Slurm Job Arrays (entre nodos) demostró ser el mecanismo de orquestación óptimo para sortear las políticas de tiempos de corte (Walltime) de los centros de supercomputación del CSIC.
-\end{enumerate}
-
-\section{Líneas Futuras de Investigación}
-El éxito de esta plataforma abre prometedoras vías de investigación:
-
-\begin{itemize}
-    \item \textbf{Portabilidad a GPU (CUDA):} La naturaleza lineal de la DFT desenrollada convierte a este algoritmo en un candidato ideal para cálculo en tarjetas gráficas (GPGPU). Una futura actualización del \texttt{generador\_de\_generadores.cpp} podría emitir *kernels* de NVIDIA CUDA (.cu) en lugar de código C++.
-    \item \textbf{Exploración de la Frontera ($\ell=117$):} Con la solidez del motor actual, el siguiente hito debe ser la resolución de instancias mayores de pares de Legendre cuyo estado de existencia sigue siendo una incógnita teórica.
-    \item \textbf{Interfaces SaaS:} Desarrollar un portal web (Software as a Service) vinculado al clúster, donde investigadores matemáticos puedan introducir el parámetro $\ell$ y recolectar las secuencias automáticamente sin requerir conocimientos de Linux o compilación en C++.
-\end{itemize}
-=======
 El presente Trabajo de Fin de Grado ha cristalizado en la concepción, diseño y despliegue de un marco de software avanzado orientado a la resolución de problemas de optimización combinatoria extrema. La convergencia entre la teoría matemática de los Pares de Legendre y las técnicas de Computación de Alto Rendimiento (HPC) ha demostrado empíricamente que las barreras impuestas por la explosión exponencial de los espacios de búsqueda pueden ser franqueadas mediante una reingeniería arquitectónica profunda. Lejos de depender exclusivamente de incrementos en la potencia bruta del hardware, este proyecto subraya la primacía del rediseño algorítmico y la manipulación de código a bajo nivel.
 
 \section{Conclusiones Clave}
@@ -1077,22 +1328,6 @@ Como evolución natural hacia la aplicabilidad y transferencia del conocimiento,
     \caption{Arquitectura conceptual propuesta para el servicio SaaS. Una API RESTful actuaría como capa de abstracción entre el investigador matemático y la complejidad orquestadora del gestor de colas Slurm en el clúster HPC.}
     \label{fig:saas_architecture}
 \end{figure}
->>>>>>> origin/overleaf-2026-05-17-1603
-
-\begin{figure}[H]
-    \centering
-    \framebox{\begin{minipage}{0.8\textwidth}
-        \centering
-        \vspace{4.5cm}
-        \textcolor{red}{\textbf{[IMAGEN SUGERIDA 9]}} \\
-        \textcolor{red}{Gráfico a futuro (Work in progress).} \\
-        \textcolor{red}{Muestra una pequeña proyección (línea punteada) de la viabilidad esperada para L=117 utilizando el código con GPU vs el tiempo estimado en CPU.}
-        \vspace{4.5cm}
-    \end{minipage}}
-    \caption{Proyección teórica de tiempos computacionales para instancias no resueltas ($\ell=117$).}
-    \label{fig:future_work}
-\end{figure}
-
 
 \backmatter
 \bibliography{refs}

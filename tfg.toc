@@ -1,5 +1,49 @@
 \babel@toc {spanish}{}\relax 
 \contentsline {chapter}{\numberline {1}Introducción}{1}{chapter.1}%
-\contentsline {chapter}{\numberline {2}\emph {Text scanning}}{5}{chapter.2}%
-\contentsline {chapter}{\numberline {3}Conclusiones}{9}{chapter.3}%
-\contentsline {chapter}{\numberline {A}Recuento de saltos}{11}{appendix.Alph1}%
+\contentsline {section}{\numberline {1.1}Antecedentes históricos y relevancia actual}{1}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Aplicaciones y logros de los pares de Legendre}{3}{section.1.2}%
+\contentsline {subsection}{\numberline {1.2.1}Sistemas de radar y sonar}{3}{subsection.1.2.1}%
+\contentsline {subsection}{\numberline {1.2.2}Diseño de experimentos y matrices ortogonales}{4}{subsection.1.2.2}%
+\contentsline {subsection}{\numberline {1.2.3}Criptografía y secuencias pseudoaleatorias}{4}{subsection.1.2.3}%
+\contentsline {subsection}{\numberline {1.2.4}Sistemas de posicionamiento satelital (GPS) y localización UWB}{4}{subsection.1.2.4}%
+\contentsline {subsection}{\numberline {1.2.5}Análisis de Funciones Booleanas mediante la Transformada de Walsh-Hadamard}{5}{subsection.1.2.5}%
+\contentsline {section}{\numberline {1.3}El reto computacional y la combinatoria explosiva}{5}{section.1.3}%
+\contentsline {subsection}{\numberline {1.3.1}Fundamentos Matemáticos del Método de Compresión}{6}{subsection.1.3.1}%
+\contentsline {section}{\numberline {1.4}Propiedades matemáticas fundamentales}{7}{section.1.4}%
+\contentsline {subsection}{\numberline {1.4.1}Función de Autocorrelación Periódica (PAF)}{7}{subsection.1.4.1}%
+\contentsline {subsection}{\numberline {1.4.2}Densidad Espectral de Potencia (PSD)}{8}{subsection.1.4.2}%
+\contentsline {section}{\numberline {1.5}Objetivos y metodología de desarrollo}{8}{section.1.5}%
+\contentsline {subsection}{\numberline {1.5.1}Metodología en Cascada (Waterfall)}{8}{subsection.1.5.1}%
+\contentsline {subsection}{\numberline {1.5.2}Herramientas y Decisiones Arquitectónicas}{8}{subsection.1.5.2}%
+\contentsline {subsection}{\numberline {1.5.3}Estructura de la Memoria}{9}{subsection.1.5.3}%
+\contentsline {chapter}{\numberline {2}Desarrollo e Innovaciones Algorítmicas}{11}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Reducción Algebraica: Cosets Ciclotómicos}{11}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Herramientas y Decisiones Arquitectónicas}{13}{subsection.2.1.1}%
+\contentsline {chapter}{\numberline {3}Desarrollo e Innovaciones Algorítmicas}{15}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Reducción Algebraica: Cosets Ciclotómicos}{15}{section.3.1}%
+\contentsline {section}{\numberline {3.2}Evolución del Software: De la I/O a la Búsqueda en Profundidad}{15}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}Fase 1: Fuerza Bruta sobre Cosets y Archivos Intermedios}{16}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Fase 2: Búsqueda en Profundidad (DFS) y Podas (Pruning)}{16}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}Fase 3: El Estado del Arte (Bitsets y Ordenación Heurística)}{18}{subsection.3.2.3}%
+\contentsline {section}{\numberline {3.3}Reducción de Complejidad Extrema: Filtros de Bloom y Estrategia Meet-in-the-Middle}{19}{section.3.3}%
+\contentsline {section}{\numberline {3.4}Estrategia de Metaprogramación: El Generador en C++}{21}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Cálculo Simbólico y Arquitectura Superescalar (Loop Unrolling)}{21}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Sistema de División por Lotes Integrado (Batching)}{23}{subsection.3.4.2}%
+\contentsline {section}{\numberline {3.5}Automatización del Flujo y Benchmarking: El \texttt {Makefile}}{24}{section.3.5}%
+\contentsline {chapter}{\numberline {4}Resultados y Análisis Experimental}{27}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Entorno Experimental: Supercomputador Altamira}{27}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Análisis Teórico de Escalabilidad (Ley de Amdahl)}{28}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Análisis de Rendimiento Empírico}{29}{section.4.3}%
+\contentsline {subsection}{\numberline {4.3.1}Impacto de la Solución de Lotes (Slurm Arrays)}{29}{subsection.4.3.1}%
+\contentsline {subsection}{\numberline {4.3.2}Impacto del Desenrollado y Vectorización}{29}{subsection.4.3.2}%
+\contentsline {section}{\numberline {4.4}Hallazgos Matemáticos: Secuencias Encontradas}{30}{section.4.4}%
+\contentsline {chapter}{\numberline {5}Conclusiones y Trabajo Futuro}{33}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Conclusiones Clave}{33}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}La Metaprogramación como Técnica Habilitante de Rendimiento Extremo}{33}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}Transformación de Complejidad mediante Estructuras Probabilísticas}{33}{subsection.5.1.2}%
+\contentsline {subsection}{\numberline {5.1.3}Sinergia Arquitectónica: Paralelismo Híbrido en Entornos HPC}{34}{subsection.5.1.3}%
+\contentsline {section}{\numberline {5.2}Líneas Futuras de Investigación}{34}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Migración de Arquitectura y Portabilidad a GPGPU (CUDA)}{34}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Exploración de la Frontera Analítica Inexplorada ($\ell =117$)}{35}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}Democratización del HPC: Interfaces de Software como Servicio (SaaS)}{35}{subsection.5.2.3}%
+\contentsline {chapter}{\numberline {}Referencias}{37}{section*.20}%
